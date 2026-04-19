@@ -1,0 +1,16 @@
+{
+	"extends": "./tsconfig.base.json",
+	"compilerOptions": {
+		"noEmit": true,
+		"jsxImportSource": "@opentui/react",
+		"paths": {
+			"*": ["./*"],
+			"@mikolajbadyl/hawcode-coding-agent": ["./src/index.ts"],
+			"@mikolajbadyl/hawcode-coding-agent/hooks": ["./src/core/hooks/index.ts"],
+			"@mikolajbadyl/hawcode-coding-agent/*": ["./src/*"],
+			"@sinclair/typebox": ["./node_modules/@sinclair/typebox"]
+		}
+	},
+	"include": ["src/**/*", "src/opentui-jsx.d.ts"],
+	"exclude": ["**/dist/**", "node_modules"]
+}

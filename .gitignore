@@ -1,0 +1,30 @@
+node_modules/
+dist/
+*.log
+.DS_Store
+*.tsbuildinfo
+*.cpuprofile
+
+# Environment
+.env
+
+# Editor files
+.vscode/
+.zed/
+.idea/
+*.swp
+*.swo
+*~
+
+coverage/
+.nyc_output/
+tui-debug.log
+compaction-results/
+syntax.jsonl
+out.jsonl
+hawcode-*.html
+out.html
+todo.md
+plans/
+.hawcode/sessions/
+.hawcode/sessions-backup/
