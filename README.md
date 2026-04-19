@@ -87,6 +87,24 @@ hawcode --resume
 | **docsfetch** | Fetch library docs |
 | **task** | Manage TODO items |
 
+## LSP & Diagnostics
+
+Hawcode includes built-in LSP and lint support for real-time diagnostics. It automatically detects and uses:
+
+- **TypeScript** (`typescript-language-server`)
+- **Biome** (linter/formatter)
+- **ESLint**
+- **Prettier**
+- **Svelte** (`svelte-language-server`)
+- **Vue** (`volar-language-server`)
+- **Python** (`pyright`, `pylsp`)
+- **Rust** (`rust-analyzer`)
+- **Go** (`gopls`)
+- **Ruby** (`solargraph`)
+- **SourceKit** (Swift)
+
+Toggle diagnostics with `/lsp` slash command or disable entirely in settings.
+
 ## Slash Commands
 
 | Command | Description |
