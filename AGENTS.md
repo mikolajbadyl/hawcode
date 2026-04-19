@@ -25,6 +25,63 @@
 - NEVER use `npm` or `npx` commands. Always use `bun` equivalents (e.g. `bunx` instead of `npx`).
 - NEVER commit unless user asks
 
+## Adding a Tool
+
+Tools are wired in several places. Miss any one and the agent will not see the tool. Checklist:
+
+### 1. Implement the tool
+
+Create `src/core/tools/<name>.ts` exporting a `ToolDefinition` (see `src/core/tools/tool-types.ts`) plus a `create<Name>ToolDefinition(cwd, opts?)` factory and convenience `create<Name>Tool` / default `<name>Tool` / `<name>ToolDefinition` exports. Required fields:
+
+- `name`, `label` — identifier shown to the LLM and TUI
+- `description` — full prose seen by the LLM; mention defaults, limits, and how to disable them (e.g. `.gitignore`, built-in excludes, truncation thresholds). Include the result shape if it is JSON
+- `promptSnippet` — one line listed under `# Available tools` in the system prompt. Match the style of existing tools (e.g. `"... (respects .gitignore)"`)
+- `parameters` — TypeBox schema; every field gets a `description`
+- `execute(toolCallId, params, signal, onUpdate, ctx)` — must honor `signal` (reject with `Error("Operation aborted")` on abort)
+- optional `renderCall` / `renderResult` for custom TUI rendering
+
+Keep I/O behind a pluggable `operations` interface so the tool is testable without a real filesystem.
+
+### 2. Register in the tools index
+
+In `src/core/tools/index.ts` add the tool to **all** of:
+
+- re-exports (`export { create<Name>Tool, ... } from "./<name>.js"`)
+- internal imports
+- `allTools` and `allToolDefinitions` maps
+- `createAllTools` and `createAllToolDefinitions` factories
+- `createReadOnlyTools`/`createReadOnlyToolDefinitions` and/or `codingTools` if it belongs there
+- `readOnlyTools` array if read-only
+
+### 3. Add to default active tool lists (BOTH places)
+
+There are two separate default lists. The SDK list wins for the TUI because `main.ts` goes through `createAgentSessionFromServices → createAgentSession`, which passes `initialActiveToolNames` and shadows the `agent-session.ts` fallback.
+
+- `src/core/sdk.ts` — `defaultActiveToolNames` (authoritative for TUI/SDK)
+- `src/core/agent-session.ts` — `_buildRuntime` default (fallback when no `initialActiveToolNames`)
+
+If you forget the SDK list, the agent will not see the tool even though everything else is wired.
+
+### 4. Add TUI visuals
+
+In `src/modes/interactive/components/tool-execution.tsx` add an entry under the same tool name to:
+
+- `TOOL_COLORS`
+- `TOOL_ICONS`
+- `TOOL_DISPLAY_NAMES`
+
+Without these the tool still runs, but renders with a fallback dot and no color/label.
+
+### 5. Update system-prompt hints if relevant
+
+If the tool overlaps with an existing workflow line in `src/core/system-prompt.ts` (e.g. "Use `search`, `find`, or `glob` before `read`"), add it and clarify when to prefer it over neighbours.
+
+### 6. Verify
+
+- `bunx tsc --noEmit` passes
+- `bun run check` passes
+- Start a fresh session — session state caches the old tool list, reload is required
+
 ## **CRITICAL** Git Rules for Parallel Agents **CRITICAL**
 
 Multiple agents may work on different files in the same worktree simultaneously. You MUST follow these rules:

@@ -300,14 +300,17 @@ function PromptInput({
 		// When file mention menu is open, intercept up/down/tab/enter
 		if (showMentionMenu) {
 			if (event.name === "up") {
+				event.preventDefault();
 				setMentionIndex((prev) => Math.max(0, prev - 1));
 				return;
 			}
 			if (event.name === "down") {
+				event.preventDefault();
 				setMentionIndex((prev) => Math.min(mentionEntries.length - 1, prev + 1));
 				return;
 			}
 			if (event.name === "tab" || (event.name === "enter" && !event.shift)) {
+				event.preventDefault();
 				const entry = mentionEntries[mentionIndex];
 				if (entry && mentionInfo) {
 					// Replace @query with the file path
@@ -320,6 +323,7 @@ function PromptInput({
 				return;
 			}
 			if (event.name === "escape") {
+				event.preventDefault();
 				// Dismiss mention menu by swallowing escape
 				return;
 			}

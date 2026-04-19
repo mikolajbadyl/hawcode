@@ -42,6 +42,16 @@ export {
 	findToolDefinition,
 } from "./find.js";
 export {
+	createGlobTool,
+	createGlobToolDefinition,
+	type GlobOperations,
+	type GlobToolDetails,
+	type GlobToolInput,
+	type GlobToolOptions,
+	globTool,
+	globToolDefinition,
+} from "./glob.js";
+export {
 	createLsTool,
 	createLsToolDefinition,
 	type LsOperations,
@@ -123,6 +133,7 @@ import {
 } from "./docsfetch.js";
 import { createEditTool, createEditToolDefinition, editTool, editToolDefinition } from "./edit.js";
 import { createFindTool, createFindToolDefinition, findTool, findToolDefinition } from "./find.js";
+import { createGlobTool, createGlobToolDefinition, globTool, globToolDefinition } from "./glob.js";
 import { createLsTool, createLsToolDefinition, lsTool, lsToolDefinition } from "./ls.js";
 import {
 	createReadTool,
@@ -145,7 +156,7 @@ export type Tool = AgentTool<any>;
 export type ToolDef = ToolDefinition<any, any>;
 
 export const codingTools: Tool[] = [readTool, bashTool, editTool, writeTool];
-export const readOnlyTools: Tool[] = [readTool, searchTool, findTool, lsTool, websearchTool, docsFetchTool];
+export const readOnlyTools: Tool[] = [readTool, searchTool, findTool, globTool, lsTool, websearchTool, docsFetchTool];
 
 export const allTools = {
 	read: readTool,
@@ -154,6 +165,7 @@ export const allTools = {
 	write: writeTool,
 	search: searchTool,
 	find: findTool,
+	glob: globTool,
 	ls: lsTool,
 	websearch: websearchTool,
 	docsfetch: docsFetchTool,
@@ -166,6 +178,7 @@ export const allToolDefinitions = {
 	write: writeToolDefinition,
 	search: searchToolDefinition,
 	find: findToolDefinition,
+	glob: globToolDefinition,
 	ls: lsToolDefinition,
 	websearch: websearchToolDefinition,
 	docsfetch: docsFetchToolDefinition,
@@ -192,6 +205,7 @@ export function createReadOnlyToolDefinitions(cwd: string, options?: ToolsOption
 		createReadToolDefinition(cwd, options?.read),
 		createSearchToolDefinition(cwd),
 		createFindToolDefinition(cwd),
+		createGlobToolDefinition(cwd),
 		createLsToolDefinition(cwd),
 	];
 }
@@ -204,6 +218,7 @@ export function createAllToolDefinitions(cwd: string, options?: ToolsOptions): R
 		write: createWriteToolDefinition(cwd),
 		search: createSearchToolDefinition(cwd),
 		find: createFindToolDefinition(cwd),
+		glob: createGlobToolDefinition(cwd),
 		ls: createLsToolDefinition(cwd),
 		websearch: createWebsearchToolDefinition(),
 		docsfetch: createDocsFetchToolDefinition(),
@@ -220,7 +235,13 @@ export function createCodingTools(cwd: string, options?: ToolsOptions): Tool[] {
 }
 
 export function createReadOnlyTools(cwd: string, options?: ToolsOptions): Tool[] {
-	return [createReadTool(cwd, options?.read), createSearchTool(cwd), createFindTool(cwd), createLsTool(cwd)];
+	return [
+		createReadTool(cwd, options?.read),
+		createSearchTool(cwd),
+		createFindTool(cwd),
+		createGlobTool(cwd),
+		createLsTool(cwd),
+	];
 }
 
 export function createAllTools(cwd: string, options?: ToolsOptions): Record<ToolName, Tool> {
@@ -231,6 +252,7 @@ export function createAllTools(cwd: string, options?: ToolsOptions): Record<Tool
 		write: createWriteTool(cwd),
 		search: createSearchTool(cwd),
 		find: createFindTool(cwd),
+		glob: createGlobTool(cwd),
 		ls: createLsTool(cwd),
 		websearch: createWebsearchTool(),
 		docsfetch: createDocsFetchTool(),

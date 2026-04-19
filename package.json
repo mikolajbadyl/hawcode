@@ -1,6 +1,6 @@
 {
 	"name": "@mikolajbadyl/hawcode-coding-agent",
-	"version": "0.1.1",
+	"version": "0.2.0",
 	"private": true,
 	"type": "module",
 	"hawcodeConfig": {
@@ -33,6 +33,7 @@
 		"cli-highlight": "^2.1.11",
 		"diff": "^8.0.2",
 		"extract-zip": "^2.0.1",
+		"fast-glob": "^3.3.3",
 		"file-type": "^21.1.1",
 		"glob": "^13.0.1",
 		"hosted-git-info": "^9.0.2",

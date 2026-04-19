@@ -27,6 +27,7 @@ const TOOL_COLORS: Record<string, string> = {
 	docsfetch: colors.cyan,
 	search: colors.cyan,
 	find: colors.cyan,
+	glob: colors.cyan,
 	ls: colors.cyan,
 	task_create: colors.accent,
 	task_update: colors.accent,
@@ -44,6 +45,7 @@ const TOOL_ICONS: Record<string, string> = {
 	docsfetch: "\u25C8", // ◈
 	search: "\u2299", // ⊙
 	find: "\u25C6", // ◆
+	glob: "\u2756", // ❖
 	ls: "\u2630", // ☰
 	task_create: "\u2610", // ☐
 	task_update: "\u2610", // ☐
@@ -60,6 +62,7 @@ const TOOL_DISPLAY_NAMES: Record<string, string> = {
 	docsfetch: "Docs",
 	search: "Search",
 	find: "Find",
+	glob: "Glob",
 	ls: "List",
 	task_create: "Task Create",
 	task_update: "Task Update",
@@ -220,6 +223,23 @@ function formatInlineArgs(
 			if (args.pattern) parts.push(String(args.pattern));
 			const p = args.path ? relativizePath(String(args.path), cwd) : ".";
 			parts.push(`in ${p}`);
+			return parts.join(" ");
+		}
+		case "glob": {
+			const parts: string[] = [];
+			const pat = args.pattern;
+			const patStr = Array.isArray(pat) ? pat.map((x) => `'${x}'`).join(", ") : pat != null ? `'${pat}'` : "";
+			if (patStr) parts.push(patStr);
+			const p = args.path ? relativizePath(String(args.path), cwd) : ".";
+			parts.push(`in ${p}`);
+			const flags: string[] = [];
+			if (args.type && args.type !== "files") flags.push(String(args.type));
+			if (args.sort && args.sort !== "mtime") flags.push(`sort:${args.sort}`);
+			if (args.dot) flags.push("dot");
+			if (args.ignoreDefaults === false) flags.push("no-defaults");
+			if (args.respectGitignore === false) flags.push("no-gitignore");
+			if (args.limit) flags.push(`limit=${args.limit}`);
+			if (flags.length) parts.push(`(${flags.join(", ")})`);
 			return parts.join(" ");
 		}
 		case "ls": {
@@ -458,6 +478,18 @@ function extractResultSummary(toolName: string, displayOutput: string): string |
 		return summary ?? null;
 	}
 
+	if (toolName === "glob") {
+		try {
+			const parsed = JSON.parse(displayOutput);
+			const count: number = typeof parsed.count === "number" ? parsed.count : (parsed.paths?.length ?? 0);
+			if (count === 0) return "No files found";
+			const suffix = parsed.truncated ? " (truncated)" : "";
+			return `${count} file${count !== 1 ? "s" : ""}${suffix}`;
+		} catch {
+			return null;
+		}
+	}
+
 	return null;
 }
 
@@ -625,7 +657,10 @@ export function ToolExecution({
 			BASH_TAIL_LINES,
 			colors.syntaxKeyword,
 		);
-	} else if ((toolName === "search" || toolName === "find" || toolName === "websearch") && displayOutput) {
+	} else if (
+		(toolName === "search" || toolName === "find" || toolName === "glob" || toolName === "websearch") &&
+		displayOutput
+	) {
 		// Show only result count summary, no full output
 		const summary = isError ? null : extractResultSummary(toolName, displayOutput);
 		contentElement = summary ? <text fg={colors.muted}>{summary}</text> : null;
