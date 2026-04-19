@@ -86,7 +86,6 @@ hawcode --resume
 | **websearch** | Search the web |
 | **docsfetch** | Fetch library docs |
 | **task** | Manage TODO items |
-| **analyze** | Run analysis agent |
 
 ## Slash Commands
 
