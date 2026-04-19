@@ -46,6 +46,7 @@ interface ChatEntry {
 	content?: string;
 	message?: AssistantMessageType;
 	toolName?: string;
+	toolCallId?: string;
 	toolInput?: string;
 	toolArgs?: unknown;
 	toolOutput?: string;
@@ -616,6 +617,7 @@ function TuiApp({
 							id: `restored-${idx++}`,
 							type: "tool",
 							toolName: tc.name,
+							toolCallId: tc.id,
 							toolInput: formattedArgs,
 							toolArgs: tc.arguments,
 							toolRunning: false,
@@ -626,7 +628,7 @@ function TuiApp({
 			} else if (msg.role === "toolResult") {
 				for (let i = restored.length - 1; i >= 0; i--) {
 					const re = restored[i];
-					if (re && re.type === "tool" && !re.toolOutput) {
+					if (re && re.type === "tool" && re.toolCallId === msg.toolCallId) {
 						const output = msg.content
 							.filter((b): b is TextContent => b.type === "text")
 							.map((b) => b.text)
@@ -892,6 +894,7 @@ function TuiApp({
 					addEntry({
 						type: "tool",
 						toolName: event.toolName,
+						toolCallId: event.toolCallId,
 						toolInput: formattedArgs,
 						toolArgs: event.args,
 						toolRunning: true,
@@ -903,7 +906,7 @@ function TuiApp({
 					setChatEntries((prev) => {
 						const updated = [...prev];
 						for (let i = updated.length - 1; i >= 0; i--) {
-							if (updated[i]?.type === "tool" && updated[i]?.toolRunning && !updated[i]?.isComplete) {
+							if (updated[i]?.type === "tool" && updated[i]?.toolCallId === event.toolCallId) {
 								let partial: string | undefined;
 								if (event.partialResult) {
 									partial =
@@ -924,7 +927,7 @@ function TuiApp({
 						const updated = [...prev];
 						for (let i = updated.length - 1; i >= 0; i--) {
 							const current = updated[i];
-							if (current?.type === "tool" && current?.toolRunning && !current?.isComplete) {
+							if (current?.type === "tool" && current?.toolCallId === event.toolCallId) {
 								let output: string | undefined;
 								if (event.result) {
 									output =
