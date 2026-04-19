@@ -83,11 +83,10 @@ cat readme.md | hawcode "explain this file"
 | **write** | Create or overwrite files |
 | **edit** | Make precise edits |
 | **bash** | Execute shell commands |
-| **search** | Search with regex, glob |
-| **find** | Find files by name |
-| **ls** | List directory contents |
-| **websearch** | Search the web |
-| **docsfetch** | Fetch library docs |
+| **search** | Search file contents by pattern |
+| **glob** | Fast file globbing with multi-pattern support |
+| **websearch** | Search the web (on user request only) |
+| **docsfetch** | Fetch library docs (on user request only) |
 | **task** | Manage TODO items |
 
 ## LSP & Diagnostics
