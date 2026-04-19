@@ -1,5 +1,6 @@
 import { diffLines } from "diff";
 import type React from "react";
+import { getToolTuiMetaMap } from "../../../core/tools/tool-registry.js";
 import { colors } from "./colors.js";
 import { MarkdownWidget } from "./markdown-widget.js";
 
@@ -18,57 +19,20 @@ interface ToolExecutionProps {
 	lspDiagnostics?: { errors: number; warnings: number; lines: string[] };
 }
 
-const TOOL_COLORS: Record<string, string> = {
-	read: colors.cyan,
-	bash: colors.syntaxKeyword,
-	edit: colors.yellow,
-	write: colors.green,
-	websearch: colors.blue,
-	docsfetch: colors.cyan,
-	search: colors.cyan,
-	find: colors.cyan,
-	glob: colors.cyan,
-	ls: colors.cyan,
-	task_create: colors.accent,
-	task_update: colors.accent,
-	task_list: colors.accent,
-	task_get: colors.accent,
-};
+// All TUI metadata comes from the tool registry (built-in + dynamic tools like task_*).
+const TUI_META = getToolTuiMetaMap();
 
-/** Per-tool icon shown before the display name. Gray while running, colored on completion. */
-const TOOL_ICONS: Record<string, string> = {
-	read: "\u25C9", // ◉
-	bash: "\u25B6", // ▶
-	edit: "\u270E", // ✎
-	write: "\u270D", // ✍
-	websearch: "\u2298", // ⊘
-	docsfetch: "\u25C8", // ◈
-	search: "\u2299", // ⊙
-	find: "\u25C6", // ◆
-	glob: "\u2756", // ❖
-	ls: "\u2630", // ☰
-	task_create: "\u2610", // ☐
-	task_update: "\u2610", // ☐
-	task_list: "\u2610", // ☐
-	task_get: "\u2610", // ☐
-};
+const TOOL_COLORS: Record<string, string> = Object.fromEntries(
+	[...TUI_META.entries()].map(([name, m]) => [name, m.color]),
+);
 
-const TOOL_DISPLAY_NAMES: Record<string, string> = {
-	read: "Read",
-	bash: "Bash",
-	edit: "Edit",
-	write: "Write",
-	websearch: "Web Search",
-	docsfetch: "Docs",
-	search: "Search",
-	find: "Find",
-	glob: "Glob",
-	ls: "List",
-	task_create: "Task Create",
-	task_update: "Task Update",
-	task_list: "Tasks",
-	task_get: "Task",
-};
+const TOOL_ICONS: Record<string, string> = Object.fromEntries(
+	[...TUI_META.entries()].map(([name, m]) => [name, m.icon]),
+);
+
+const TOOL_DISPLAY_NAMES: Record<string, string> = Object.fromEntries(
+	[...TUI_META.entries()].map(([name, m]) => [name, m.displayName]),
+);
 
 const BASH_TAIL_LINES = 5;
 const CONTENT_MAX_LINES = 15;

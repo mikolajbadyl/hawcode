@@ -74,6 +74,7 @@ import { type BashOperations, createLocalBashOperations } from "./tools/bash.js"
 import { createAllToolDefinitions } from "./tools/index.js";
 import type { TaskManager } from "./tools/task.js";
 import { createToolDefinitionFromAgentTool, wrapToolDefinition } from "./tools/tool-definition-wrapper.js";
+import { ALL_TOOL_NAMES } from "./tools/tool-registry.js";
 
 /** Session-specific events that extend the core AgentEvent */
 export type AgentSessionEvent =
@@ -1561,7 +1562,7 @@ export class AgentSession {
 
 		const defaultActiveToolNames = this._baseToolsOverride
 			? Object.keys(this._baseToolsOverride)
-			: ["read", "bash", "edit", "write", "search", "find", "glob", "ls"];
+			: [...ALL_TOOL_NAMES];
 		const customToolNames = this._customTools.map((t) => t.name);
 		const baseActiveToolNames = [...(options.activeToolNames ?? defaultActiveToolNames), ...customToolNames];
 		this._refreshToolRegistry({
