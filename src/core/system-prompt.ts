@@ -82,7 +82,7 @@ Never repeat the exact same failing call more than once.
 
 # Using tools
 Use dedicated tools instead of bash when available.
-Use \`search\`, \`find\`, or \`glob\` before \`read\` to locate relevant code. Prefer \`find\` for simple file lookups, \`glob\` for multi-pattern or sorted results.
+Use \`search\` or \`glob\` before \`read\` to locate relevant code. Prefer \`glob\` for multi-pattern or sorted results.
 Use \`edit\` for targeted changes, \`write\` only for new files.
 After \`bash\`, check exit code and stderr before continuing.
 When truncating long command output, preserve the start and end — cut the middle.

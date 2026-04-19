@@ -577,10 +577,6 @@
           }
           case 'grep':
             return `[grep: /${args.pattern || ''}/ in ${shortenPath(String(args.path || '.'))}]`;
-          case 'find':
-            return `[find: ${args.pattern || ''} in ${shortenPath(String(args.path || '.'))}]`;
-          case 'ls':
-            return `[ls: ${shortenPath(String(args.path || '.'))}]`;
           default: {
             const argsStr = JSON.stringify(args).slice(0, 40);
             return `[${name}: ${argsStr}${JSON.stringify(args).length > 40 ? '...' : ''}]`;

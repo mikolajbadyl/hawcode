@@ -89,7 +89,7 @@ export function createWebsearchToolDefinition(
 		name: "websearch",
 		label: "websearch",
 		description:
-			"Search the web using natural language queries. Returns results with titles, URLs, and content previews. Useful for finding current information, documentation, and examples.",
+			"Search the web using natural language queries. Returns results with titles, URLs, and content previews. Use only when the user explicitly asks to search the web or when you genuinely cannot answer from existing knowledge.",
 		promptSnippet: "Search the web for information",
 		promptGuidelines: [
 			"Use websearch when you need current information beyond your training data.",

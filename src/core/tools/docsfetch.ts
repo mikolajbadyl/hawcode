@@ -72,7 +72,7 @@ export function createDocsFetchToolDefinition(
 		name: "docsfetch",
 		label: "docsfetch",
 		description:
-			"Search official documentation for any library, framework, or package. Returns relevant documentation snippets with code examples. Use this when you need up-to-date API references, configuration details, or usage patterns for specific libraries.",
+			"Search official documentation for any library, framework, or package. Returns relevant documentation snippets with code examples. Use only when the user explicitly asks to look up documentation or when you genuinely cannot answer from existing knowledge.",
 		promptSnippet: "Search library documentation for up-to-date API references",
 		promptGuidelines: [
 			"Use docsfetch for library-specific questions (APIs, configuration, version-specific behavior).",

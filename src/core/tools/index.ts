@@ -32,16 +32,6 @@ export {
 } from "./edit.js";
 export { withFileMutationQueue } from "./file-mutation-queue.js";
 export {
-	createFindTool,
-	createFindToolDefinition,
-	type FindOperations,
-	type FindToolDetails,
-	type FindToolInput,
-	type FindToolOptions,
-	findTool,
-	findToolDefinition,
-} from "./find.js";
-export {
 	createGlobTool,
 	createGlobToolDefinition,
 	type GlobOperations,
@@ -51,16 +41,6 @@ export {
 	globTool,
 	globToolDefinition,
 } from "./glob.js";
-export {
-	createLsTool,
-	createLsToolDefinition,
-	type LsOperations,
-	type LsToolDetails,
-	type LsToolInput,
-	type LsToolOptions,
-	lsTool,
-	lsToolDefinition,
-} from "./ls.js";
 export {
 	createReadTool,
 	createReadToolDefinition,
@@ -118,70 +98,33 @@ export {
 } from "./write.js";
 
 import type { AgentTool } from "../../agent-core/index.js";
+import type { BashToolOptions } from "./bash.js";
+import type { ReadToolOptions } from "./read.js";
 import {
-	type BashToolOptions,
-	bashTool,
-	bashToolDefinition,
-	createBashTool,
-	createBashToolDefinition,
-} from "./bash.js";
-import {
-	createDocsFetchTool,
-	createDocsFetchToolDefinition,
-	docsFetchTool,
-	docsFetchToolDefinition,
-} from "./docsfetch.js";
-import { createEditTool, createEditToolDefinition, editTool, editToolDefinition } from "./edit.js";
-import { createFindTool, createFindToolDefinition, findTool, findToolDefinition } from "./find.js";
-import { createGlobTool, createGlobToolDefinition, globTool, globToolDefinition } from "./glob.js";
-import { createLsTool, createLsToolDefinition, lsTool, lsToolDefinition } from "./ls.js";
-import {
-	createReadTool,
-	createReadToolDefinition,
-	type ReadToolOptions,
-	readTool,
-	readToolDefinition,
-} from "./read.js";
-import { createSearchTool, createSearchToolDefinition, searchTool, searchToolDefinition } from "./search.js";
+	ALL_TOOL_NAMES,
+	type ToolName as RegistryToolName,
+	createAllToolDefinitions as registryCreateAllToolDefinitions,
+	createAllTools as registryCreateAllTools,
+	getAllToolDefinitions as registryGetAllToolDefinitions,
+	getAllTools as registryGetAllTools,
+} from "./tool-registry.js";
 import type { ToolDefinition } from "./tool-types.js";
-import {
-	createWebsearchTool,
-	createWebsearchToolDefinition,
-	websearchTool,
-	websearchToolDefinition,
-} from "./websearch.js";
-import { createWriteTool, createWriteToolDefinition, writeTool, writeToolDefinition } from "./write.js";
 
 export type Tool = AgentTool<any>;
 export type ToolDef = ToolDefinition<any, any>;
 
-export const allTools = {
-	read: readTool,
-	bash: bashTool,
-	edit: editTool,
-	write: writeTool,
-	search: searchTool,
-	find: findTool,
-	glob: globTool,
-	ls: lsTool,
-	websearch: websearchTool,
-	docsfetch: docsFetchTool,
-};
+export { getToolTuiMeta, getToolTuiMetaMap, TOOL_REGISTRY, type ToolTuiMeta } from "./tool-registry.js";
 
-export const allToolDefinitions = {
-	read: readToolDefinition,
-	bash: bashToolDefinition,
-	edit: editToolDefinition,
-	write: writeToolDefinition,
-	search: searchToolDefinition,
-	find: findToolDefinition,
-	glob: globToolDefinition,
-	ls: lsToolDefinition,
-	websearch: websearchToolDefinition,
-	docsfetch: docsFetchToolDefinition,
-};
+/** All built-in tool names — single source of truth. */
+export const allToolNames = ALL_TOOL_NAMES;
 
-export type ToolName = keyof typeof allTools;
+export type ToolName = RegistryToolName;
+
+/** Pre-built tools using process.cwd() */
+export const allTools = registryGetAllTools();
+
+/** Pre-built tool definitions using process.cwd() */
+export const allToolDefinitions = registryGetAllToolDefinitions();
 
 export interface ToolsOptions {
 	read?: ReadToolOptions;
@@ -189,31 +132,9 @@ export interface ToolsOptions {
 }
 
 export function createAllToolDefinitions(cwd: string, options?: ToolsOptions): Record<ToolName, ToolDef> {
-	return {
-		read: createReadToolDefinition(cwd, options?.read),
-		bash: createBashToolDefinition(cwd, options?.bash),
-		edit: createEditToolDefinition(cwd),
-		write: createWriteToolDefinition(cwd),
-		search: createSearchToolDefinition(cwd),
-		find: createFindToolDefinition(cwd),
-		glob: createGlobToolDefinition(cwd),
-		ls: createLsToolDefinition(cwd),
-		websearch: createWebsearchToolDefinition(),
-		docsfetch: createDocsFetchToolDefinition(),
-	};
+	return registryCreateAllToolDefinitions(cwd, options as Record<string, unknown>);
 }
 
 export function createAllTools(cwd: string, options?: ToolsOptions): Record<ToolName, Tool> {
-	return {
-		read: createReadTool(cwd, options?.read),
-		bash: createBashTool(cwd, options?.bash),
-		edit: createEditTool(cwd),
-		write: createWriteTool(cwd),
-		search: createSearchTool(cwd),
-		find: createFindTool(cwd),
-		glob: createGlobTool(cwd),
-		ls: createLsTool(cwd),
-		websearch: createWebsearchTool(),
-		docsfetch: createDocsFetchTool(),
-	};
+	return registryCreateAllTools(cwd, options as Record<string, unknown>);
 }

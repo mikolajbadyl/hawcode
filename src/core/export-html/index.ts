@@ -174,7 +174,7 @@ function generateHtml(sessionData: SessionData, themeName?: string): string {
 }
 
 /** Built-in tool names that have custom rendering in template.js */
-const BUILTIN_TOOLS = new Set(["bash", "read", "write", "edit", "ls", "find", "search"]);
+const BUILTIN_TOOLS = new Set(["bash", "read", "write", "edit", "search"]);
 
 /**
  * Pre-render custom tools to HTML using their TUI renderers.

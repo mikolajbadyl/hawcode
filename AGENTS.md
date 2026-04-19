@@ -27,7 +27,7 @@
 
 ## Adding a Tool
 
-Tools are wired in several places. Miss any one and the agent will not see the tool. Checklist:
+Tools are registered in a central registry. Adding a new tool requires changes in 3 places:
 
 ### 1. Implement the tool
 
@@ -42,43 +42,35 @@ Create `src/core/tools/<name>.ts` exporting a `ToolDefinition` (see `src/core/to
 
 Keep I/O behind a pluggable `operations` interface so the tool is testable without a real filesystem.
 
-### 2. Register in the tools index
+### 2. Register in the tool registry
 
-In `src/core/tools/index.ts` add the tool to **all** of:
+In `src/core/tools/tool-registry.ts` append an entry to the `TOOL_REGISTRY` array:
 
-- re-exports (`export { create<Name>Tool, ... } from "./<name>.js"`)
-- internal imports
-- `allTools` and `allToolDefinitions` maps
-- `createAllTools` and `createAllToolDefinitions` factories
-- `createReadOnlyTools`/`createReadOnlyToolDefinitions` and/or `codingTools` if it belongs there
-- `readOnlyTools` array if read-only
+```ts
+{
+  name: "<name>",
+  createDefinition: create<Name>ToolDefinition,
+  createTool: create<Name>Tool,
+  defaultDefinition: <name>ToolDefinition,
+  defaultTool: <name>Tool,
+  tui: { color: "#hex", icon: "char", displayName: "Label" },
+},
+```
 
-### 3. Add to default active tool lists (BOTH places)
+If the tool depends on runtime state (like task tools depend on `TaskManager`), add its TUI metadata to `DYNAMIC_TOOL_TUI` instead and wire creation in `src/core/sdk.ts`.
 
-There are two separate default lists. The SDK list wins for the TUI because `main.ts` goes through `createAgentSessionFromServices → createAgentSession`, which passes `initialActiveToolNames` and shadows the `agent-session.ts` fallback.
+Also add re-exports in `src/core/tools/index.ts`:
 
-- `src/core/sdk.ts` — `defaultActiveToolNames` (authoritative for TUI/SDK)
-- `src/core/agent-session.ts` — `_buildRuntime` default (fallback when no `initialActiveToolNames`)
+```ts
+export { create<Name>Tool, create<Name>ToolDefinition, <name>Tool, <name>ToolDefinition } from "./<name>.js";
+```
 
-If you forget the SDK list, the agent will not see the tool even though everything else is wired.
+### 3. Update system-prompt hints if relevant
 
-### 4. Add TUI visuals
+If the tool overlaps with an existing workflow line in `src/core/system-prompt.ts` (e.g. "Use `search` or `glob` before `read`"), add it and clarify when to prefer it over neighbours.
 
-In `src/modes/interactive/components/tool-execution.tsx` add an entry under the same tool name to:
+### 4. Verify
 
-- `TOOL_COLORS`
-- `TOOL_ICONS`
-- `TOOL_DISPLAY_NAMES`
-
-Without these the tool still runs, but renders with a fallback dot and no color/label.
-
-### 5. Update system-prompt hints if relevant
-
-If the tool overlaps with an existing workflow line in `src/core/system-prompt.ts` (e.g. "Use `search`, `find`, or `glob` before `read`"), add it and clarify when to prefer it over neighbours.
-
-### 6. Verify
-
-- `bunx tsc --noEmit` passes
 - `bun run check` passes
 - Start a fresh session — session state caches the old tool list, reload is required
 

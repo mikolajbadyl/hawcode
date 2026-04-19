@@ -13,27 +13,9 @@ import { DefaultResourceLoader } from "./resource-loader.js";
 import { getDefaultSessionDir, SessionManager } from "./session-manager.js";
 import { SettingsManager } from "./settings-manager.js";
 import { time } from "./timings.js";
-import {
-	allTools,
-	bashTool,
-	createBashTool,
-	createEditTool,
-	createFindTool,
-	createLsTool,
-	createReadTool,
-	createSearchTool,
-	createWriteTool,
-	editTool,
-	findTool,
-	lsTool,
-	readTool,
-	searchTool,
-	type Tool,
-	type ToolName,
-	withFileMutationQueue,
-	writeTool,
-} from "./tools/index.js";
+import { allTools, type Tool, type ToolName } from "./tools/index.js";
 import { createTaskToolDefinitions, TaskManager } from "./tools/task.js";
+import { ALL_TOOL_NAMES } from "./tools/tool-registry.js";
 import type { ToolDefinition } from "./tools/tool-types.js";
 
 export interface CreateAgentSessionOptions {
@@ -83,28 +65,23 @@ export * from "./agent-session-runtime.js";
 export type { PromptTemplate } from "./prompt-templates.js";
 export type { SlashCommandInfo, SlashCommandSource } from "./slash-commands.js";
 export type { Tool } from "./tools/index.js";
-export type { ToolDefinition } from "./tools/tool-types.js";
-
 export {
 	allTools as allBuiltInTools,
-	withFileMutationQueue,
 	// Pre-built tools (use process.cwd())
 	bashTool,
-	editTool,
-	findTool,
-	lsTool,
-	readTool,
-	searchTool,
-	writeTool,
 	// Tool factories (for custom cwd)
 	createBashTool,
 	createEditTool,
-	createFindTool,
-	createLsTool,
 	createReadTool,
 	createSearchTool,
 	createWriteTool,
-};
+	editTool,
+	readTool,
+	searchTool,
+	withFileMutationQueue,
+	writeTool,
+} from "./tools/index.js";
+export type { ToolDefinition } from "./tools/tool-types.js";
 
 // Helper Functions
 
@@ -222,18 +199,7 @@ export async function createAgentSession(options: CreateAgentSessionOptions = {}
 		thinkingLevel = "off";
 	}
 
-	const defaultActiveToolNames: ToolName[] = [
-		"read",
-		"bash",
-		"edit",
-		"write",
-		"search",
-		"find",
-		"glob",
-		"ls",
-		"websearch",
-		"docsfetch",
-	];
+	const defaultActiveToolNames: ToolName[] = [...ALL_TOOL_NAMES] as ToolName[];
 	const initialActiveToolNames: ToolName[] = options.tools
 		? options.tools.map((t) => t.name).filter((n): n is ToolName => n in allTools)
 		: defaultActiveToolNames;
