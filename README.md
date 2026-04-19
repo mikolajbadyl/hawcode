@@ -59,6 +59,9 @@ hawcode --continue
 
 # Resume from picker
 hawcode --resume
+
+# Run with piped command
+cat readme.md | hawcode "explain this file"
 ```
 
 ## CLI Options
