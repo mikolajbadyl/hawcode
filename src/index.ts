@@ -76,17 +76,12 @@ export {
 	createAgentSessionServices,
 	createBashTool,
 	// Tool factories (for custom cwd)
-	createCodingTools,
 	createEditTool,
 	createFindTool,
 	createLsTool,
-	createReadOnlyTools,
 	createReadTool,
 	createSearchTool,
 	createWriteTool,
-	type PromptTemplate,
-	// Pre-built tools (use process.cwd())
-	readOnlyTools,
 } from "./core/sdk.js";
 export {
 	type BranchSummaryEntry,
@@ -129,7 +124,6 @@ export {
 	type BashToolOptions,
 	bashTool,
 	bashToolDefinition,
-	codingTools,
 	createBashToolDefinition,
 	createEditToolDefinition,
 	createFindToolDefinition,

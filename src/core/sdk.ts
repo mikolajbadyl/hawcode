@@ -16,20 +16,16 @@ import { time } from "./timings.js";
 import {
 	allTools,
 	bashTool,
-	codingTools,
 	createBashTool,
-	createCodingTools,
 	createEditTool,
 	createFindTool,
 	createLsTool,
-	createReadOnlyTools,
 	createReadTool,
 	createSearchTool,
 	createWriteTool,
 	editTool,
 	findTool,
 	lsTool,
-	readOnlyTools,
 	readTool,
 	searchTool,
 	type Tool,
@@ -90,28 +86,24 @@ export type { Tool } from "./tools/index.js";
 export type { ToolDefinition } from "./tools/tool-types.js";
 
 export {
-	// Pre-built tools (use process.cwd())
-	readTool,
-	bashTool,
-	editTool,
-	writeTool,
-	searchTool,
-	findTool,
-	lsTool,
-	codingTools,
-	readOnlyTools,
 	allTools as allBuiltInTools,
 	withFileMutationQueue,
+	// Pre-built tools (use process.cwd())
+	bashTool,
+	editTool,
+	findTool,
+	lsTool,
+	readTool,
+	searchTool,
+	writeTool,
 	// Tool factories (for custom cwd)
-	createCodingTools,
-	createReadOnlyTools,
-	createReadTool,
 	createBashTool,
 	createEditTool,
-	createWriteTool,
-	createSearchTool,
 	createFindTool,
 	createLsTool,
+	createReadTool,
+	createSearchTool,
+	createWriteTool,
 };
 
 // Helper Functions

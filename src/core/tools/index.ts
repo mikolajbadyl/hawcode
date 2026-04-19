@@ -155,9 +155,6 @@ import { createWriteTool, createWriteToolDefinition, writeTool, writeToolDefinit
 export type Tool = AgentTool<any>;
 export type ToolDef = ToolDefinition<any, any>;
 
-export const codingTools: Tool[] = [readTool, bashTool, editTool, writeTool];
-export const readOnlyTools: Tool[] = [readTool, searchTool, findTool, globTool, lsTool, websearchTool, docsFetchTool];
-
 export const allTools = {
 	read: readTool,
 	bash: bashTool,
@@ -191,25 +188,6 @@ export interface ToolsOptions {
 	bash?: BashToolOptions;
 }
 
-export function createCodingToolDefinitions(cwd: string, options?: ToolsOptions): ToolDef[] {
-	return [
-		createReadToolDefinition(cwd, options?.read),
-		createBashToolDefinition(cwd, options?.bash),
-		createEditToolDefinition(cwd),
-		createWriteToolDefinition(cwd),
-	];
-}
-
-export function createReadOnlyToolDefinitions(cwd: string, options?: ToolsOptions): ToolDef[] {
-	return [
-		createReadToolDefinition(cwd, options?.read),
-		createSearchToolDefinition(cwd),
-		createFindToolDefinition(cwd),
-		createGlobToolDefinition(cwd),
-		createLsToolDefinition(cwd),
-	];
-}
-
 export function createAllToolDefinitions(cwd: string, options?: ToolsOptions): Record<ToolName, ToolDef> {
 	return {
 		read: createReadToolDefinition(cwd, options?.read),
@@ -223,25 +201,6 @@ export function createAllToolDefinitions(cwd: string, options?: ToolsOptions): R
 		websearch: createWebsearchToolDefinition(),
 		docsfetch: createDocsFetchToolDefinition(),
 	};
-}
-
-export function createCodingTools(cwd: string, options?: ToolsOptions): Tool[] {
-	return [
-		createReadTool(cwd, options?.read),
-		createBashTool(cwd, options?.bash),
-		createEditTool(cwd),
-		createWriteTool(cwd),
-	];
-}
-
-export function createReadOnlyTools(cwd: string, options?: ToolsOptions): Tool[] {
-	return [
-		createReadTool(cwd, options?.read),
-		createSearchTool(cwd),
-		createFindTool(cwd),
-		createGlobTool(cwd),
-		createLsTool(cwd),
-	];
 }
 
 export function createAllTools(cwd: string, options?: ToolsOptions): Record<ToolName, Tool> {
