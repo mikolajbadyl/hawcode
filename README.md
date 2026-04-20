@@ -1,143 +1,168 @@
-![Hawcode Banner](assets/banner.png)
+<div align="center">
 
-# Hawcode
+<img src="assets/banner.png" alt="Hawcode" width="600" />
 
-Minimalist AI coding agent with interactive TUI, session management, and multi-provider LLM support.
+### AI coding agent that lives in your terminal
 
-## Philosophy
+[![Version](https://img.shields.io/badge/version-0.3.0-blue.svg)](https://github.com/mikolajbadyl/hawcode)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](https://opensource.org/licenses/MIT)
+[![Bun](https://img.shields.io/badge/runtime-Bun-orange.svg)](https://bun.sh)
 
-Hawcode is built on a simple principle: **only include what's necessary**. No bloat, no unnecessary features - just a focused tool that does one thing well.
+</div>
 
-The project is developed and maintained by me, with careful attention to keeping things lean and practical. Built on [pi-mono](https://github.com/badlogic/pi-mono).
+---
 
-## What is Hawcode?
+Hawcode is an interactive AI coding assistant that runs entirely in your terminal. It reads your codebase, edits files, runs commands, manages sessions, and gives you real-time LSP diagnostics — all from a keyboard-driven TUI.
 
-Hawcode is an interactive AI coding assistant that runs in your terminal. It can:
+Built on [pi-mono](https://github.com/badlogic/pi-mono).
 
-- Read, write, and edit files
-- Execute shell commands
-- Search across your codebase
-- Manage multiple sessions with branches
-- Export conversations to HTML/MD/JSONL
+## Features
 
-## Installation
+- **Interactive TUI** — full keyboard-driven terminal UI with scrollable chat, syntax highlighting, and inline diffs
+- **Multi-provider LLM** — works with OpenAI, Anthropic, Google, OpenRouter, Ollama, and any OpenAI-compatible API
+- **Session management** — persistent sessions with branching, forking, compaction, and export to HTML / Markdown / JSONL
+- **Built-in tools** — read, write, edit, bash, search, glob, web search, docs fetch, task tracking
+- **Background processes** — spawn long-running commands in the background, view live output, kill on demand (`Ctrl+B`)
+- **LSP diagnostics** — real-time error & warning feedback from TypeScript, Biome, ESLint, Prettier, Svelte, Vue, Python, Rust, Go, Ruby, Swift, and more
+- **Configurable keybindings** — every key is rebindable via `keybindings.json`
+- **Zero bloat** — only what's necessary, nothing more
 
-### From source
+## Quick Start
 
 ```bash
+# Clone and build
+git clone https://github.com/mikolajbadyl/hawcode.git
+cd hawcode
 bun install
 bun run build
-```
 
-### Install system-wide
-
-```bash
+# Install globally
 ./install.sh
-
-# Add to PATH (add to ~/.bashrc or ~/.zshrc):
 export PATH="${HOME}/.local/bin:${PATH}"
-```
 
-## First-time setup
-
-Run the interactive setup wizard:
-
-```bash
+# First run — configure your providers
 hawcode --login
 ```
 
-This will prompt you to configure providers and models.
-
-### Using from command line
+## Usage
 
 ```bash
-# New session
+# Start a new session
 hawcode
 
 # Continue previous session
 hawcode --continue
 
-# Resume from picker
+# Pick a session to resume
 hawcode --resume
 
-# Run with piped command
-cat readme.md | hawcode "explain this file"
+# Use a specific model
+hawcode --model anthropic/claude-sonnet-4
+
+# Pipe input
+cat src/main.ts | hawcode "explain this file"
+
+# Attach files
+hawcode @package.json @tsconfig.json "review these configs"
 ```
 
-## CLI Options
+## CLI Reference
 
-| Option | Description |
-|--------|-------------|
+| Flag | Description |
+|------|-------------|
 | `--login` | Interactive setup wizard |
-| `--auth-tools` | Configure API keys for tools |
-| `--model <id>` | Use specific model |
-| `--continue, -c` | Continue previous session |
-| `--resume, -r` | Resume specific session |
+| `--auth-tools` | Configure API keys for websearch/docsfetch |
+| `--model <id>` | Use specific model (supports `provider/id:thinking`) |
+| `--continue`, `-c` | Continue previous session |
+| `--resume`, `-r` | Pick a session to resume from |
+| `--tools <list>` | Comma-separated tool whitelist |
+| `--export <file>` | Export session file to HTML and exit |
 | `--reload-cache` | Force refresh model metadata |
+| `--help`, `-h` | Show help |
+| `--version`, `-v` | Show version |
 
 ## Tools
 
-| Tool | Description |
+| Tool | What it does |
 |------|-------------|
-| **read** | Read files with highlighting |
+| **read** | Read files with line ranges and image support |
 | **write** | Create or overwrite files |
-| **edit** | Make precise edits |
-| **bash** | Execute shell commands |
-| **search** | Search file contents by pattern |
+| **edit** | Surgical text replacement with diff preview |
+| **bash** | Execute shell commands (with background mode) |
+| **search** | Ripgrep-powered content search |
 | **glob** | Fast file globbing with multi-pattern support |
-| **websearch** | Search the web (on user request only) |
-| **docsfetch** | Fetch library docs (on user request only) |
-| **task** | Manage TODO items |
+| **websearch** | Web search (only when you ask) |
+| **docsfetch** | Fetch library documentation (only when you ask) |
+| **task** | Track TODO items during multi-step work |
 
-## LSP & Diagnostics
+## Keybindings
 
-Hawcode includes built-in LSP and lint support for real-time diagnostics. It automatically detects and uses:
+All keybindings are configurable in `~/.config/hawcode/agent/keybindings.json`.
 
-- **TypeScript** (`typescript-language-server`)
-- **Biome** (linter/formatter)
-- **ESLint**
-- **Prettier**
-- **Svelte** (`svelte-language-server`)
-- **Vue** (`volar-language-server`)
-- **Python** (`pyright`, `pylsp`)
-- **Rust** (`rust-analyzer`)
-- **Go** (`gopls`)
-- **Ruby** (`solargraph`)
-- **SourceKit** (Swift)
-
-Toggle diagnostics with `/lsp` slash command or disable entirely in settings.
+| Key | Action |
+|-----|--------|
+| `Ctrl+C` | Abort current operation (double-tap to exit) |
+| `Ctrl+D` | Exit when editor is empty |
+| `Ctrl+P` | Cycle model forward |
+| `Ctrl+Shift+P` | Cycle model backward |
+| `Ctrl+L` | Open model selector |
+| `Tab` / `Ctrl+T` | Cycle thinking level |
+| `Ctrl+E` | Toggle tool output expansion |
+| `Ctrl+B` | Open background processes panel |
+| `Ctrl+Z` | Suspend to background |
+| `Escape` | Cancel / abort |
+| `Ctrl+G` | Open external editor |
 
 ## Slash Commands
 
 | Command | Description |
 |---------|-------------|
 | `/models` | Switch model |
-| `/export` | Export session |
-| `/session` | Show stats |
-| `/new` | Start new session |
-| `/compact` | Compact context |
+| `/export` | Export session to HTML / MD / JSONL |
+| `/session` | Show session info and stats |
+| `/new` | Start a new session |
+| `/compact` | Compact conversation context |
+| `/reload` | Reload config and resources |
+| `/usage` | Show API usage and quota |
+| `/lsp` | Toggle LSP diagnostics |
 | `/quit` | Exit |
 
 ## Session Management
 
-Sessions are stored in `~/.config/hawcode/agent/sessions`.
+Sessions are stored in `~/.config/hawcode/agent/sessions`. Each session persists the full conversation, model choice, and thinking level.
 
-Use `/export` in the TUI to export sessions to HTML, Markdown, or JSONL.
+- **Continue** — `hawcode --continue` picks up where you left off
+- **Resume** — `hawcode --resume` opens a session picker
+- **Export** — use `/export` inside the TUI for HTML, Markdown, or JSONL
+- **Compact** — `/compact` summarizes context when you're running low on tokens
+- **Fork** — branch a session to explore without losing the original
 
 ## Configuration
 
-Config files are in `~/.config/hawcode/agent/`:
-- `providers.json`
-- `models.json`
-- `settings.json`
-- `keybindings.json`
+All config lives in `~/.config/hawcode/agent/`:
+
+```
+providers.json     — LLM provider API keys and endpoints
+models.json        — Model definitions and overrides
+settings.json      — General settings
+keybindings.json   — Custom keybindings
+```
+
+## LSP Support
+
+Hawcode auto-detects language servers on your `$PATH` and shows real-time diagnostics inline after file edits:
+
+TypeScript, Biome, ESLint, Prettier, Svelte, Vue, Python (Pyright/Pylsp), Rust, Go, Ruby, Swift.
+
+Toggle with `/lsp` or disable in `settings.json`.
 
 ## Development
 
 ```bash
 bun install
-bun run build
-bun run check
+bun run check    # lint + typecheck
+bun run build    # compile binary
+bun run dev      # run from source
 ```
 
 ## License
