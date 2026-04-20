@@ -26,6 +26,7 @@ import { BUILTIN_SLASH_COMMANDS, type BuiltinSlashCommand } from "../../core/sla
 import { getTextOutput } from "../../core/tools/render-utils.js";
 import { fetchUsage, type UsageInfo } from "../../core/usage-fetcher.js";
 import { AssistantMessage } from "./components/assistant-message.js";
+import { BackgroundProcessesPopup } from "./components/background-processes-popup.js";
 import { colors } from "./components/colors.js";
 import { ExportDialog, type ExportFormat } from "./components/export-dialog.js";
 import { Footer } from "./components/footer.js";
@@ -585,6 +586,8 @@ function TuiApp({
 	const [showStartup, setShowStartup] = useState(true);
 	const [showModelPicker, setShowModelPicker] = useState(false);
 	const [showExportDialog, setShowExportDialog] = useState(false);
+	const [showBgPopup, setShowBgPopup] = useState(false);
+	const [bgCount, setBgCount] = useState(0);
 	const [thinkingLevel, setThinkingLevel] = useState<string | undefined>(session.state.thinkingLevel);
 	const [currentModelId, setCurrentModelId] = useState<string>(session.state.model?.id ?? "");
 	const entryIdRef = useRef(0);
@@ -813,6 +816,22 @@ function TuiApp({
 		},
 		[session, addEntry, dismissStartup, handleSlashCommand, isWorking, scrollToBottom],
 	);
+
+	// Track background process count
+	useEffect(() => {
+		const bgManager = session.backgroundProcessManager;
+		if (!bgManager) return;
+		const refresh = (): void => {
+			setBgCount(bgManager.runningCount());
+		};
+		refresh();
+		bgManager.on("change", refresh);
+		const interval = setInterval(refresh, 2000);
+		return () => {
+			bgManager.off("change", refresh);
+			clearInterval(interval);
+		};
+	}, [session.backgroundProcessManager]);
 
 	// Subscribe to agent session events
 	useEffect(() => {
@@ -1138,6 +1157,13 @@ function TuiApp({
 			return;
 		}
 
+		if (event.ctrl && event.name === "b") {
+			if (session.backgroundProcessManager) {
+				setShowBgPopup((prev) => !prev);
+			}
+			return;
+		}
+
 		if (event.ctrl && event.name === "l") {
 			setChatEntries([]);
 			setShowStartup(false);
@@ -1275,6 +1301,13 @@ function TuiApp({
 				/>
 			) : null}
 
+			{showBgPopup && session.backgroundProcessManager ? (
+				<BackgroundProcessesPopup
+					bgManager={session.backgroundProcessManager}
+					onClose={() => setShowBgPopup(false)}
+				/>
+			) : null}
+
 			<text fg={colors.darkGray}>{"─".repeat(termWidth)}</text>
 
 			{/* Queued messages */}
@@ -1290,17 +1323,44 @@ function TuiApp({
 			) : null}
 
 			{/* Active task line */}
-			{!showModelPicker && !showExportDialog
+			{!showModelPicker && !showExportDialog && !showBgPopup
 				? (() => {
+						const bgWidget =
+							bgCount > 0 && session.backgroundProcessManager ? (
+								<text fg={colors.accent}>{`bg:${bgCount} [Ctrl+B]`}</text>
+							) : null;
+						const bgWidgetWidth = bgWidget ? 10 + String(bgCount).length + 10 : 0;
 						try {
 							const tasks = session.taskManager?.loadTasks();
 							const active = tasks?.find((t) => t.status === "in_progress");
-							return active ? (
-								<box style={{ paddingLeft: 2, paddingRight: 1, flexDirection: "row", gap: 1 }}>
-									<text fg={colors.yellow}>{"\u25B6"}</text>
-									<text fg={colors.muted}>{active.title}</text>
-								</box>
-							) : null;
+							if (active || bgWidget) {
+								const maxTitleWidth = termWidth - 6 - bgWidgetWidth;
+								let title = active?.title ?? "";
+								if (title.length > maxTitleWidth) {
+									title = `${title.slice(0, Math.max(0, maxTitleWidth - 1))}…`;
+								}
+								return (
+									<box
+										style={{
+											paddingLeft: 2,
+											paddingRight: 1,
+											flexDirection: "row",
+											justifyContent: "space-between",
+										}}
+									>
+										<box style={{ flexDirection: "row", gap: 1, flexShrink: 1 }}>
+											{active ? (
+												<>
+													<text fg={colors.yellow}>{"\u25B6"}</text>
+													<text fg={colors.muted}>{title}</text>
+												</>
+											) : null}
+										</box>
+										{bgWidget}
+									</box>
+								);
+							}
+							return null;
 						} catch {
 							return null;
 						}

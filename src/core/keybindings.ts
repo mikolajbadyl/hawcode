@@ -11,6 +11,7 @@ import {
 } from "./tui-stubs.js";
 
 export interface AppKeybindings {
+	"app.bg_processes": true;
 	"app.interrupt": true;
 	"app.clear": true;
 	"app.exit": true;
@@ -126,6 +127,10 @@ export const KEYBINDINGS = {
 	"app.session.deleteNoninvasive": {
 		defaultKeys: "ctrl+backspace",
 		description: "Delete session when query is empty",
+	},
+	"app.bg_processes": {
+		defaultKeys: "ctrl+b",
+		description: "Open background processes panel",
 	},
 } as const satisfies KeybindingDefinitions;
 
