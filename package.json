@@ -10,7 +10,7 @@
 	"scripts": {
 		"clean": "shx rm -rf dist",
 		"build": "bun run clean && bun build --compile src/bun/cli.ts --outfile dist/hawcode && bun run copy-assets",
-		"copy-assets": "shx mkdir -p dist/theme dist/assets dist/export-html/vendor && shx cp src/modes/interactive/theme/*.json dist/theme/ && shx cp src/modes/interactive/assets/*.png dist/assets/ && shx cp src/core/export-html/template.html dist/export-html/ && shx cp src/core/export-html/template.css dist/export-html/ && shx cp src/core/export-html/template.js dist/export-html/ && shx cp src/core/export-html/vendor/*.js dist/export-html/vendor/ && shx cp node_modules/@silvia-odwyer/photon-node/photon_rs_bg.wasm dist/ && shx cp package.json dist/package.json",
+		"copy-assets": "shx mkdir -p dist/assets dist/export-html/vendor && shx cp src/modes/interactive/assets/*.png dist/assets/ && shx cp src/core/export-html/template.html dist/export-html/ && shx cp src/core/export-html/template.css dist/export-html/ && shx cp src/core/export-html/template.js dist/export-html/ && shx cp src/core/export-html/vendor/*.js dist/export-html/vendor/ && shx cp node_modules/@silvia-odwyer/photon-node/photon_rs_bg.wasm dist/ && shx cp package.json dist/package.json",
 		"dev": "bun src/bun/cli.ts",
 		"check": "biome check --write --error-on-warnings . && tsc --noEmit",
 		"test": "echo 'no tests'"

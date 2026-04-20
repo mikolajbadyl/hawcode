@@ -33,7 +33,7 @@ import { allTools } from "./core/tools/index.js";
 import { runMigrations, showDeprecationWarnings } from "./migrations.js";
 import { TuiInteractiveMode } from "./modes/index.js";
 import { inkSelect } from "./modes/interactive/components/ink-select.js";
-import { initTheme, stopThemeWatcher } from "./modes/interactive/theme/theme.js";
+import { initTheme } from "./modes/interactive/theme/theme.js";
 import { handleConfigCommand, handlePackageCommand } from "./package-manager-cli.js";
 
 function collectSettingsDiagnostics(
@@ -84,10 +84,10 @@ async function createSessionManager(
 	parsed: Args,
 	cwd: string,
 	sessionDir: string | undefined,
-	settingsManager: SettingsManager,
+	_settingsManager: SettingsManager,
 ): Promise<SessionManager> {
 	if (parsed.resume) {
-		initTheme(settingsManager.getTheme(), true);
+		initTheme();
 		try {
 			const selectedPath = await inkSelectSession((onProgress) => SessionManager.list(cwd, sessionDir, onProgress));
 			if (!selectedPath) {
@@ -96,7 +96,6 @@ async function createSessionManager(
 			}
 			return SessionManager.open(selectedPath, sessionDir);
 		} finally {
-			stopThemeWatcher();
 		}
 	}
 
@@ -305,7 +304,7 @@ export async function main(args: string[]) {
 		takeOverStdout();
 	}
 
-	initTheme(settingsManager.getTheme(), isInteractive);
+	initTheme();
 	time("initTheme");
 
 	// Show deprecation warnings in interactive mode
@@ -342,7 +341,6 @@ export async function main(args: string[]) {
 			time("interactiveMode.init");
 			printTimings();
 			interactiveMode.stop();
-			stopThemeWatcher();
 			if (process.stdout.writableLength > 0) {
 				await new Promise<void>((resolve) => process.stdout.once("drain", resolve));
 			}
@@ -365,7 +363,6 @@ export async function main(args: string[]) {
 			initialMessage,
 			initialImages,
 		});
-		stopThemeWatcher();
 		restoreStdout();
 		if (exitCode !== 0) {
 			process.exitCode = exitCode;

@@ -8,7 +8,7 @@ import React from "react";
 import type { ResolvedPaths } from "../core/package-manager.js";
 import type { SettingsManager } from "../core/settings-manager.js";
 import { ConfigSelectorComponent } from "../modes/interactive/components/config-selector.js";
-import { initTheme, stopThemeWatcher } from "../modes/interactive/theme/theme.js";
+import { initTheme } from "../modes/interactive/theme/theme.js";
 
 export interface ConfigSelectorOptions {
 	resolvedPaths: ResolvedPaths;
@@ -19,7 +19,7 @@ export interface ConfigSelectorOptions {
 
 /** Show TUI config selector and return when closed */
 export async function selectConfig(options: ConfigSelectorOptions): Promise<void> {
-	initTheme(options.settingsManager.getTheme(), true);
+	initTheme();
 
 	const renderer = await createCliRenderer();
 
@@ -36,13 +36,11 @@ export async function selectConfig(options: ConfigSelectorOptions): Promise<void
 					if (!resolved) {
 						resolved = true;
 						renderer.destroy();
-						stopThemeWatcher();
 						resolve();
 					}
 				},
 				onExit: () => {
 					renderer.destroy();
-					stopThemeWatcher();
 					process.exit(0);
 				},
 			});

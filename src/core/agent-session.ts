@@ -21,6 +21,7 @@ import { isContextOverflow, modelsAreEqual, resetApiProviders, supportsXhigh } f
 import { getDocsPath } from "../config.js";
 import { theme } from "../modes/interactive/theme/theme.js";
 import { sleep } from "../utils/sleep.js";
+import type { BackgroundProcessManager } from "./background-processes.js";
 import { type BashResult, executeBashWithOperations } from "./bash-executor.js";
 import {
 	type CompactionResult,
@@ -131,6 +132,8 @@ export interface AgentSessionConfig {
 	afterCompactionHook?: (sessionManager: SessionManager) => string | null | undefined;
 	/** Task manager for todo tracking. Exposed on session for UI access. */
 	taskManager?: TaskManager;
+	/** Background process manager for run_in_background support. */
+	backgroundProcessManager?: BackgroundProcessManager;
 }
 
 /** Options for AgentSession.prompt() */
@@ -227,6 +230,7 @@ export class AgentSession {
 	private _customTools: ToolDefinition[];
 	private _afterCompactionHook: ((sessionManager: SessionManager) => string | null | undefined) | undefined;
 	readonly taskManager: TaskManager | undefined;
+	readonly backgroundProcessManager: BackgroundProcessManager | undefined;
 	private _baseToolDefinitions: Map<string, ToolDefinition> = new Map();
 	private _cwd: string;
 	private _initialActiveToolNames?: string[];
@@ -252,6 +256,7 @@ export class AgentSession {
 		this._customTools = config.customTools ?? [];
 		this._afterCompactionHook = config.afterCompactionHook;
 		this.taskManager = config.taskManager;
+		this.backgroundProcessManager = config.backgroundProcessManager;
 		this._cwd = config.cwd;
 		this._modelRegistry = config.modelRegistry;
 		this._initialActiveToolNames = config.initialActiveToolNames;
@@ -1553,7 +1558,7 @@ export class AgentSession {
 				)
 			: createAllToolDefinitions(this._cwd, {
 					read: { autoResizeImages },
-					bash: { commandPrefix: shellCommandPrefix },
+					bash: { commandPrefix: shellCommandPrefix, backgroundProcessManager: this.backgroundProcessManager },
 				});
 
 		this._baseToolDefinitions = new Map(
@@ -2100,8 +2105,6 @@ export class AgentSession {
 	 * @returns Path to exported file
 	 */
 	async exportToHtml(outputPath?: string): Promise<string> {
-		const themeName = this.settingsManager.getTheme();
-
 		// Create tool renderer if we have an extension runner (for custom tool HTML rendering)
 		const toolRenderer: ToolHtmlRenderer = createToolHtmlRenderer({
 			getToolDefinition: (name) => this.getToolDefinition(name),
@@ -2111,7 +2114,6 @@ export class AgentSession {
 
 		return await exportSessionToHtml(this.sessionManager, this.state, {
 			outputPath,
-			themeName,
 			toolRenderer,
 		});
 	}

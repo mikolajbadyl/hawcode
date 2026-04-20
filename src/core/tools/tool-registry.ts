@@ -141,6 +141,8 @@ export const DYNAMIC_TOOL_TUI: ReadonlyMap<string, ToolTuiMeta> = new Map([
 	["task_update", { color: "#8BC4DB", icon: "\u2610", displayName: "Task Update" }],
 	["task_list", { color: "#8BC4DB", icon: "\u2610", displayName: "Tasks" }],
 	["task_get", { color: "#8BC4DB", icon: "\u2610", displayName: "Task" }],
+	["bg-output", { color: "#C678DD", icon: "\u25C9", displayName: "Bg Output" }],
+	["bg-kill", { color: "#E06C75", icon: "\u2716", displayName: "Bg Kill" }],
 ]);
 
 // -- Derived helpers ----------------------------------------------------------

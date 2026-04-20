@@ -4,6 +4,7 @@ import { type Message, type Model, streamSimple } from "../ai/index.js";
 import { getAgentDir } from "../config.js";
 import { AgentSession } from "./agent-session.js";
 import { AuthStorage } from "./auth-storage.js";
+import { BackgroundProcessManager } from "./background-processes.js";
 import { DEFAULT_THINKING_LEVEL } from "./defaults.js";
 import { convertToLlm } from "./messages.js";
 import { ModelRegistry } from "./model-registry.js";
@@ -13,6 +14,8 @@ import { DefaultResourceLoader } from "./resource-loader.js";
 import { getDefaultSessionDir, SessionManager } from "./session-manager.js";
 import { SettingsManager } from "./settings-manager.js";
 import { time } from "./timings.js";
+import { createBgKillToolDefinition } from "./tools/bg-kill.js";
+import { createBgOutputToolDefinition } from "./tools/bg-output.js";
 import { allTools, type Tool, type ToolName } from "./tools/index.js";
 import { createTaskToolDefinitions, TaskManager } from "./tools/task.js";
 import { ALL_TOOL_NAMES } from "./tools/tool-registry.js";
@@ -287,6 +290,12 @@ export async function createAgentSession(options: CreateAgentSessionOptions = {}
 	const taskManager = new TaskManager(sessionManager);
 	const taskTools = createTaskToolDefinitions(taskManager);
 
+	const backgroundProcessManager = new BackgroundProcessManager();
+	const bgTools = [
+		createBgOutputToolDefinition(backgroundProcessManager),
+		createBgKillToolDefinition(backgroundProcessManager),
+	];
+
 	const session = new AgentSession({
 		agent,
 		sessionManager,
@@ -294,11 +303,12 @@ export async function createAgentSession(options: CreateAgentSessionOptions = {}
 		cwd,
 		scopedModels: options.scopedModels,
 		resourceLoader,
-		customTools: [...taskTools, ...(options.customTools ?? [])] as ToolDefinition[],
+		customTools: [...taskTools, ...bgTools, ...(options.customTools ?? [])] as ToolDefinition[],
 		modelRegistry,
 		initialActiveToolNames,
 		afterCompactionHook: () => taskManager.formatForInjection(),
 		taskManager,
+		backgroundProcessManager,
 	});
 	return {
 		session,

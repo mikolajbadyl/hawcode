@@ -1125,11 +1125,7 @@ function TuiApp({
 		}
 
 		if (event.name === "escape") {
-			if (isLoading || isWorking) {
-				session.abort();
-				setIsLoading(false);
-				setIsWorking(false);
-			} else if (showExportDialog) {
+			if (showExportDialog) {
 				setShowExportDialog(false);
 			} else if (showModelPicker) {
 				setShowModelPicker(false);

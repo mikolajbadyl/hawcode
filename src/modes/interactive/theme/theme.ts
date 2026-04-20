@@ -1,100 +1,10 @@
-import * as fs from "node:fs";
-import * as path from "node:path";
-import { type Static, Type } from "@sinclair/typebox";
-import { TypeCompiler } from "@sinclair/typebox/compiler";
 import chalk from "chalk";
 import { highlight, supportsLanguage } from "cli-highlight";
-import { getCustomThemesDir, getThemesDir } from "../../../config.js";
-import type { SourceInfo } from "../../../core/source-info.js";
 import type { EditorTheme, MarkdownTheme, SelectListTheme, SettingsListTheme } from "../../../core/tui-stubs.js";
 
 // ============================================================================
-// Types & Schema
+// Types
 // ============================================================================
-
-const ColorValueSchema = Type.Union([
-	Type.String(), // hex "#ff0000", var ref "primary", or empty ""
-	Type.Integer({ minimum: 0, maximum: 255 }), // 256-color index
-]);
-
-type ColorValue = Static<typeof ColorValueSchema>;
-
-const ThemeJsonSchema = Type.Object({
-	$schema: Type.Optional(Type.String()),
-	name: Type.String(),
-	vars: Type.Optional(Type.Record(Type.String(), ColorValueSchema)),
-	colors: Type.Object({
-		// Core UI (10 colors)
-		accent: ColorValueSchema,
-		border: ColorValueSchema,
-		borderAccent: ColorValueSchema,
-		borderMuted: ColorValueSchema,
-		success: ColorValueSchema,
-		error: ColorValueSchema,
-		warning: ColorValueSchema,
-		muted: ColorValueSchema,
-		dim: ColorValueSchema,
-		text: ColorValueSchema,
-		thinkingText: ColorValueSchema,
-		// Backgrounds & Content Text (11 colors)
-		selectedBg: ColorValueSchema,
-		userMessageBg: ColorValueSchema,
-		userMessageText: ColorValueSchema,
-		customMessageBg: ColorValueSchema,
-		customMessageText: ColorValueSchema,
-		customMessageLabel: ColorValueSchema,
-		toolPendingBg: ColorValueSchema,
-		toolSuccessBg: ColorValueSchema,
-		toolErrorBg: ColorValueSchema,
-		toolTitle: ColorValueSchema,
-		toolOutput: ColorValueSchema,
-		// Markdown (10 colors)
-		mdHeading: ColorValueSchema,
-		mdLink: ColorValueSchema,
-		mdLinkUrl: ColorValueSchema,
-		mdCode: ColorValueSchema,
-		mdCodeBlock: ColorValueSchema,
-		mdCodeBlockBorder: ColorValueSchema,
-		mdQuote: ColorValueSchema,
-		mdQuoteBorder: ColorValueSchema,
-		mdHr: ColorValueSchema,
-		mdListBullet: ColorValueSchema,
-		// Tool Diffs (3 colors)
-		toolDiffAdded: ColorValueSchema,
-		toolDiffRemoved: ColorValueSchema,
-		toolDiffContext: ColorValueSchema,
-		// Syntax Highlighting (9 colors)
-		syntaxComment: ColorValueSchema,
-		syntaxKeyword: ColorValueSchema,
-		syntaxFunction: ColorValueSchema,
-		syntaxVariable: ColorValueSchema,
-		syntaxString: ColorValueSchema,
-		syntaxNumber: ColorValueSchema,
-		syntaxType: ColorValueSchema,
-		syntaxOperator: ColorValueSchema,
-		syntaxPunctuation: ColorValueSchema,
-		// Thinking Level Borders (6 colors)
-		thinkingOff: ColorValueSchema,
-		thinkingMinimal: ColorValueSchema,
-		thinkingLow: ColorValueSchema,
-		thinkingMedium: ColorValueSchema,
-		thinkingHigh: ColorValueSchema,
-		thinkingXhigh: ColorValueSchema,
-		// Bash Mode (1 color)
-		bashMode: ColorValueSchema,
-	}),
-	export: Type.Optional(
-		Type.Object({
-			pageBg: Type.Optional(ColorValueSchema),
-			cardBg: Type.Optional(ColorValueSchema),
-			infoBg: Type.Optional(ColorValueSchema),
-		}),
-	),
-});
-
-type ThemeJson = Static<typeof ThemeJsonSchema>;
-
-const validateThemeJson = TypeCompiler.Compile(ThemeJsonSchema);
 
 export type ThemeColor =
 	| "accent"
@@ -154,6 +64,74 @@ export type ThemeBg =
 type ColorMode = "truecolor" | "256color";
 
 // ============================================================================
+// Hardcoded Dark Palette
+// ============================================================================
+
+const DARK_FG: Record<ThemeColor, string> = {
+	accent: "#8EB8F7",
+	border: "#8EB8F7",
+	borderAccent: "#78E2FF",
+	borderMuted: "#5A6E84",
+	success: "#9ADEFA",
+	error: "#F08890",
+	warning: "#F0D08E",
+	muted: "#A0B0C8",
+	dim: "#7890A8",
+	text: "",
+	thinkingText: "#A0B0C8",
+	userMessageText: "",
+	customMessageText: "",
+	customMessageLabel: "#9AC0FF",
+	toolTitle: "",
+	toolOutput: "#A0B0C8",
+	mdHeading: "#9AC0FF",
+	mdLink: "#8EB8F7",
+	mdLinkUrl: "#7890A8",
+	mdCode: "#8EB8F7",
+	mdCodeBlock: "#9ADEFA",
+	mdCodeBlockBorder: "#A0B0C8",
+	mdQuote: "#A0B0C8",
+	mdQuoteBorder: "#7890A8",
+	mdHr: "#5A6E84",
+	mdListBullet: "#8EB8F7",
+	toolDiffAdded: "#1A3D22",
+	toolDiffRemoved: "#4A1E1E",
+	toolDiffContext: "#A0B0C8",
+	syntaxComment: "#7890A8",
+	syntaxKeyword: "#9AC0FF",
+	syntaxFunction: "#9EE0FF",
+	syntaxVariable: "#BDD8F0",
+	syntaxString: "#D4BAF0",
+	syntaxNumber: "#9ADEFA",
+	syntaxType: "#78E2FF",
+	syntaxOperator: "#A0B0C8",
+	syntaxPunctuation: "#A0B0C8",
+	thinkingOff: "#5A6E84",
+	thinkingMinimal: "#7890A8",
+	thinkingLow: "#8EB8F7",
+	thinkingMedium: "#9AC0FF",
+	thinkingHigh: "#B8CAFF",
+	thinkingXhigh: "#D4BAF0",
+	bashMode: "#9ADEFA",
+};
+
+const DARK_BG: Record<ThemeBg, string> = {
+	selectedBg: "#364860",
+	userMessageBg: "#2E3A4A",
+	customMessageBg: "#383850",
+	toolPendingBg: "#2E3644",
+	toolSuccessBg: "#2E3E48",
+	toolErrorBg: "#443434",
+};
+
+/** Export colors for HTML generation */
+const EXPORT_COLORS = {
+	pageBg: "#1E1E26",
+	cardBg: "#26262E",
+	infoBg: "#364860",
+};
+
+// ============================================================================
 // Color Utilities
 // ============================================================================
 
@@ -162,46 +140,31 @@ function detectColorMode(): ColorMode {
 	if (colorterm === "truecolor" || colorterm === "24bit") {
 		return "truecolor";
 	}
-	// Windows Terminal supports truecolor
 	if (process.env.WT_SESSION) {
 		return "truecolor";
 	}
 	const term = process.env.TERM || "";
-	// Fall back to 256color for truly limited terminals
 	if (term === "dumb" || term === "" || term === "linux") {
 		return "256color";
 	}
-	// Terminal.app also doesn't support truecolor
 	if (process.env.TERM_PROGRAM === "Apple_Terminal") {
 		return "256color";
 	}
-	// GNU screen doesn't support truecolor unless explicitly opted in via COLORTERM=truecolor.
-	// TERM under screen is typically "screen", "screen-256color", or "screen.xterm-256color".
 	if (term === "screen" || term.startsWith("screen-") || term.startsWith("screen.")) {
 		return "256color";
 	}
-	// Assume truecolor for everything else - virtually all modern terminals support it
 	return "truecolor";
 }
 
 function hexToRgb(hex: string): { r: number; g: number; b: number } {
 	const cleaned = hex.replace("#", "");
-	if (cleaned.length !== 6) {
-		throw new Error(`Invalid hex color: ${hex}`);
-	}
 	const r = parseInt(cleaned.substring(0, 2), 16);
 	const g = parseInt(cleaned.substring(2, 4), 16);
 	const b = parseInt(cleaned.substring(4, 6), 16);
-	if (Number.isNaN(r) || Number.isNaN(g) || Number.isNaN(b)) {
-		throw new Error(`Invalid hex color: ${hex}`);
-	}
 	return { r, g, b };
 }
 
-// The 6x6x6 color cube channel values (indices 0-5)
 const CUBE_VALUES = [0, 95, 135, 175, 215, 255];
-
-// Grayscale ramp values (indices 232-255, 24 grays from 8 to 238)
 const GRAY_VALUES = Array.from({ length: 24 }, (_, i) => 8 + i * 10);
 
 function findClosestCubeIndex(value: number): number {
@@ -231,7 +194,6 @@ function findClosestGrayIndex(gray: number): number {
 }
 
 function colorDistance(r1: number, g1: number, b1: number, r2: number, g2: number, b2: number): number {
-	// Weighted Euclidean distance (human eye is more sensitive to green)
 	const dr = r1 - r2;
 	const dg = g1 - g2;
 	const db = b1 - b2;
@@ -239,7 +201,6 @@ function colorDistance(r1: number, g1: number, b1: number, r2: number, g2: numbe
 }
 
 function rgbTo256(r: number, g: number, b: number): number {
-	// Find closest color in the 6x6x6 cube
 	const rIdx = findClosestCubeIndex(r);
 	const gIdx = findClosestCubeIndex(g);
 	const bIdx = findClosestCubeIndex(b);
@@ -249,21 +210,16 @@ function rgbTo256(r: number, g: number, b: number): number {
 	const cubeIndex = 16 + 36 * rIdx + 6 * gIdx + bIdx;
 	const cubeDist = colorDistance(r, g, b, cubeR, cubeG, cubeB);
 
-	// Find closest grayscale
 	const gray = Math.round(0.299 * r + 0.587 * g + 0.114 * b);
 	const grayIdx = findClosestGrayIndex(gray);
 	const grayValue = GRAY_VALUES[grayIdx];
 	const grayIndex = 232 + grayIdx;
 	const grayDist = colorDistance(r, g, b, grayValue, grayValue, grayValue);
 
-	// Check if color has noticeable saturation (hue matters)
-	// If max-min spread is significant, prefer cube to preserve tint
 	const maxC = Math.max(r, g, b);
 	const minC = Math.min(r, g, b);
 	const spread = maxC - minC;
 
-	// Only consider grayscale if color is nearly neutral (spread < 10)
-	// AND grayscale is actually closer
 	if (spread < 10 && grayDist < cubeDist) {
 		return grayIndex;
 	}
@@ -276,63 +232,24 @@ function hexTo256(hex: string): number {
 	return rgbTo256(r, g, b);
 }
 
-function fgAnsi(color: string | number, mode: ColorMode): string {
+function fgAnsi(color: string, mode: ColorMode): string {
 	if (color === "") return "\x1b[39m";
-	if (typeof color === "number") return `\x1b[38;5;${color}m`;
-	if (color.startsWith("#")) {
-		if (mode === "truecolor") {
-			const { r, g, b } = hexToRgb(color);
-			return `\x1b[38;2;${r};${g};${b}m`;
-		} else {
-			const index = hexTo256(color);
-			return `\x1b[38;5;${index}m`;
-		}
+	if (mode === "truecolor") {
+		const { r, g, b } = hexToRgb(color);
+		return `\x1b[38;2;${r};${g};${b}m`;
 	}
-	throw new Error(`Invalid color value: ${color}`);
+	const index = hexTo256(color);
+	return `\x1b[38;5;${index}m`;
 }
 
-function bgAnsi(color: string | number, mode: ColorMode): string {
+function bgAnsi(color: string, mode: ColorMode): string {
 	if (color === "") return "\x1b[49m";
-	if (typeof color === "number") return `\x1b[48;5;${color}m`;
-	if (color.startsWith("#")) {
-		if (mode === "truecolor") {
-			const { r, g, b } = hexToRgb(color);
-			return `\x1b[48;2;${r};${g};${b}m`;
-		} else {
-			const index = hexTo256(color);
-			return `\x1b[48;5;${index}m`;
-		}
+	if (mode === "truecolor") {
+		const { r, g, b } = hexToRgb(color);
+		return `\x1b[48;2;${r};${g};${b}m`;
 	}
-	throw new Error(`Invalid color value: ${color}`);
-}
-
-function resolveVarRefs(
-	value: ColorValue,
-	vars: Record<string, ColorValue>,
-	visited = new Set<string>(),
-): string | number {
-	if (typeof value === "number" || value === "" || value.startsWith("#")) {
-		return value;
-	}
-	if (visited.has(value)) {
-		throw new Error(`Circular variable reference detected: ${value}`);
-	}
-	if (!(value in vars)) {
-		throw new Error(`Variable reference not found: ${value}`);
-	}
-	visited.add(value);
-	return resolveVarRefs(vars[value], vars, visited);
-}
-
-function resolveThemeColors<T extends Record<string, ColorValue>>(
-	colors: T,
-	vars: Record<string, ColorValue> = {},
-): Record<keyof T, string | number> {
-	const resolved: Record<string, string | number> = {};
-	for (const [key, value] of Object.entries(colors)) {
-		resolved[key] = resolveVarRefs(value, vars);
-	}
-	return resolved as Record<keyof T, string | number>;
+	const index = hexTo256(color);
+	return `\x1b[48;5;${index}m`;
 }
 
 // ============================================================================
@@ -340,29 +257,18 @@ function resolveThemeColors<T extends Record<string, ColorValue>>(
 // ============================================================================
 
 export class Theme {
-	readonly name?: string;
-	readonly sourcePath?: string;
-	sourceInfo?: SourceInfo;
 	private fgColors: Map<ThemeColor, string>;
 	private bgColors: Map<ThemeBg, string>;
 	private mode: ColorMode;
 
-	constructor(
-		fgColors: Record<ThemeColor, string | number>,
-		bgColors: Record<ThemeBg, string | number>,
-		mode: ColorMode,
-		options: { name?: string; sourcePath?: string; sourceInfo?: SourceInfo } = {},
-	) {
-		this.name = options.name;
-		this.sourcePath = options.sourcePath;
-		this.sourceInfo = options.sourceInfo;
+	constructor(mode: ColorMode) {
 		this.mode = mode;
 		this.fgColors = new Map();
-		for (const [key, value] of Object.entries(fgColors) as [ThemeColor, string | number][]) {
+		for (const [key, value] of Object.entries(DARK_FG) as [ThemeColor, string][]) {
 			this.fgColors.set(key, fgAnsi(value, mode));
 		}
 		this.bgColors = new Map();
-		for (const [key, value] of Object.entries(bgColors) as [ThemeBg, string | number][]) {
+		for (const [key, value] of Object.entries(DARK_BG) as [ThemeBg, string][]) {
 			this.bgColors.set(key, bgAnsi(value, mode));
 		}
 	}
@@ -370,13 +276,13 @@ export class Theme {
 	fg(color: ThemeColor, text: string): string {
 		const ansi = this.fgColors.get(color);
 		if (!ansi) throw new Error(`Unknown theme color: ${color}`);
-		return `${ansi}${text}\x1b[39m`; // Reset only foreground color
+		return `${ansi}${text}\x1b[39m`;
 	}
 
 	bg(color: ThemeBg, text: string): string {
 		const ansi = this.bgColors.get(color);
 		if (!ansi) throw new Error(`Unknown theme background color: ${color}`);
-		return `${ansi}${text}\x1b[49m`; // Reset only background color
+		return `${ansi}${text}\x1b[49m`;
 	}
 
 	bold(text: string): string {
@@ -416,7 +322,6 @@ export class Theme {
 	}
 
 	getThinkingBorderColor(level: "off" | "minimal" | "low" | "medium" | "high" | "xhigh"): (str: string) => string {
-		// Map thinking levels to dedicated theme colors
 		switch (level) {
 			case "off":
 				return (str: string) => this.fg("thinkingOff", str);
@@ -441,219 +346,11 @@ export class Theme {
 }
 
 // ============================================================================
-// Theme Loading
-// ============================================================================
-
-let BUILTIN_THEMES: Record<string, ThemeJson> | undefined;
-
-function getBuiltinThemes(): Record<string, ThemeJson> {
-	if (!BUILTIN_THEMES) {
-		const themesDir = getThemesDir();
-		const darkPath = path.join(themesDir, "dark.json");
-		const lightPath = path.join(themesDir, "light.json");
-		BUILTIN_THEMES = {
-			dark: JSON.parse(fs.readFileSync(darkPath, "utf-8")) as ThemeJson,
-			light: JSON.parse(fs.readFileSync(lightPath, "utf-8")) as ThemeJson,
-		};
-	}
-	return BUILTIN_THEMES;
-}
-
-export function getAvailableThemes(): string[] {
-	const themes = new Set<string>(Object.keys(getBuiltinThemes()));
-	const customThemesDir = getCustomThemesDir();
-	if (fs.existsSync(customThemesDir)) {
-		const files = fs.readdirSync(customThemesDir);
-		for (const file of files) {
-			if (file.endsWith(".json")) {
-				themes.add(file.slice(0, -5));
-			}
-		}
-	}
-	for (const name of registeredThemes.keys()) {
-		themes.add(name);
-	}
-	return Array.from(themes).sort();
-}
-
-export interface ThemeInfo {
-	name: string;
-	path: string | undefined;
-}
-
-export function getAvailableThemesWithPaths(): ThemeInfo[] {
-	const themesDir = getThemesDir();
-	const customThemesDir = getCustomThemesDir();
-	const result: ThemeInfo[] = [];
-
-	// Built-in themes
-	for (const name of Object.keys(getBuiltinThemes())) {
-		result.push({ name, path: path.join(themesDir, `${name}.json`) });
-	}
-
-	// Custom themes
-	if (fs.existsSync(customThemesDir)) {
-		for (const file of fs.readdirSync(customThemesDir)) {
-			if (file.endsWith(".json")) {
-				const name = file.slice(0, -5);
-				if (!result.some((t) => t.name === name)) {
-					result.push({ name, path: path.join(customThemesDir, file) });
-				}
-			}
-		}
-	}
-
-	for (const [name, theme] of registeredThemes.entries()) {
-		if (!result.some((t) => t.name === name)) {
-			result.push({ name, path: theme.sourcePath });
-		}
-	}
-
-	return result.sort((a, b) => a.name.localeCompare(b.name));
-}
-
-function parseThemeJson(label: string, json: unknown): ThemeJson {
-	if (!validateThemeJson.Check(json)) {
-		const errors = Array.from(validateThemeJson.Errors(json));
-		const missingColors: string[] = [];
-		const otherErrors: string[] = [];
-
-		for (const e of errors) {
-			// Check for missing required color properties
-			const match = e.path.match(/^\/colors\/(\w+)$/);
-			if (match && e.message.includes("Required")) {
-				missingColors.push(match[1]);
-			} else {
-				otherErrors.push(`  - ${e.path}: ${e.message}`);
-			}
-		}
-
-		let errorMessage = `Invalid theme "${label}":\n`;
-		if (missingColors.length > 0) {
-			errorMessage += "\nMissing required color tokens:\n";
-			errorMessage += missingColors.map((c) => `  - ${c}`).join("\n");
-			errorMessage += '\n\nPlease add these colors to your theme\'s "colors" object.';
-			errorMessage += "\nSee the built-in themes (dark.json, light.json) for reference values.";
-		}
-		if (otherErrors.length > 0) {
-			errorMessage += `\n\nOther errors:\n${otherErrors.join("\n")}`;
-		}
-
-		throw new Error(errorMessage);
-	}
-
-	return json as ThemeJson;
-}
-
-function parseThemeJsonContent(label: string, content: string): ThemeJson {
-	let json: unknown;
-	try {
-		json = JSON.parse(content);
-	} catch (error) {
-		throw new Error(`Failed to parse theme ${label}: ${error}`);
-	}
-	return parseThemeJson(label, json);
-}
-
-function loadThemeJson(name: string): ThemeJson {
-	const builtinThemes = getBuiltinThemes();
-	if (name in builtinThemes) {
-		return builtinThemes[name];
-	}
-	const registeredTheme = registeredThemes.get(name);
-	if (registeredTheme?.sourcePath) {
-		const content = fs.readFileSync(registeredTheme.sourcePath, "utf-8");
-		return parseThemeJsonContent(registeredTheme.sourcePath, content);
-	}
-	if (registeredTheme) {
-		throw new Error(`Theme "${name}" does not have a source path for export`);
-	}
-	const customThemesDir = getCustomThemesDir();
-	const themePath = path.join(customThemesDir, `${name}.json`);
-	if (!fs.existsSync(themePath)) {
-		throw new Error(`Theme not found: ${name}`);
-	}
-	const content = fs.readFileSync(themePath, "utf-8");
-	return parseThemeJsonContent(name, content);
-}
-
-function createTheme(themeJson: ThemeJson, mode?: ColorMode, sourcePath?: string): Theme {
-	const colorMode = mode ?? detectColorMode();
-	const resolvedColors = resolveThemeColors(themeJson.colors, themeJson.vars);
-	const fgColors: Record<ThemeColor, string | number> = {} as Record<ThemeColor, string | number>;
-	const bgColors: Record<ThemeBg, string | number> = {} as Record<ThemeBg, string | number>;
-	const bgColorKeys: Set<string> = new Set([
-		"selectedBg",
-		"userMessageBg",
-		"customMessageBg",
-		"toolPendingBg",
-		"toolSuccessBg",
-		"toolErrorBg",
-	]);
-	for (const [key, value] of Object.entries(resolvedColors)) {
-		if (bgColorKeys.has(key)) {
-			bgColors[key as ThemeBg] = value;
-		} else {
-			fgColors[key as ThemeColor] = value;
-		}
-	}
-	return new Theme(fgColors, bgColors, colorMode, {
-		name: themeJson.name,
-		sourcePath,
-	});
-}
-
-export function loadThemeFromPath(themePath: string, mode?: ColorMode): Theme {
-	const content = fs.readFileSync(themePath, "utf-8");
-	const themeJson = parseThemeJsonContent(themePath, content);
-	return createTheme(themeJson, mode, themePath);
-}
-
-function loadTheme(name: string, mode?: ColorMode): Theme {
-	const registeredTheme = registeredThemes.get(name);
-	if (registeredTheme) {
-		return registeredTheme;
-	}
-	const themeJson = loadThemeJson(name);
-	return createTheme(themeJson, mode);
-}
-
-export function getThemeByName(name: string): Theme | undefined {
-	try {
-		return loadTheme(name);
-	} catch {
-		return undefined;
-	}
-}
-
-function detectTerminalBackground(): "dark" | "light" {
-	const colorfgbg = process.env.COLORFGBG || "";
-	if (colorfgbg) {
-		const parts = colorfgbg.split(";");
-		if (parts.length >= 2) {
-			const bg = parseInt(parts[1], 10);
-			if (!Number.isNaN(bg)) {
-				const result = bg < 8 ? "dark" : "light";
-				return result;
-			}
-		}
-	}
-	return "dark";
-}
-
-function getDefaultTheme(): string {
-	return detectTerminalBackground();
-}
-
-// ============================================================================
 // Global Theme Instance
 // ============================================================================
 
-// Use globalThis to share theme across module loaders (tsx + jiti in dev mode)
 const THEME_KEY = Symbol.for("@mikolajbadyl/hawcode-coding-agent:theme");
 
-// Export theme as a getter that reads from globalThis
-// This ensures all module instances (tsx, jiti) see the same theme
 export const theme: Theme = new Proxy({} as Theme, {
 	get(_target, prop) {
 		const t = (globalThis as Record<symbol, Theme>)[THEME_KEY];
@@ -666,279 +363,40 @@ function setGlobalTheme(t: Theme): void {
 	(globalThis as Record<symbol, Theme>)[THEME_KEY] = t;
 }
 
-let currentThemeName: string | undefined;
-let themeWatcher: fs.FSWatcher | undefined;
-let themeReloadTimer: NodeJS.Timeout | undefined;
-let onThemeChangeCallback: (() => void) | undefined;
-const registeredThemes = new Map<string, Theme>();
-
-export function setRegisteredThemes(themes: Theme[]): void {
-	registeredThemes.clear();
-	for (const theme of themes) {
-		if (theme.name) {
-			registeredThemes.set(theme.name, theme);
-		}
-	}
-}
-
-export function initTheme(themeName?: string, enableWatcher: boolean = false): void {
-	const name = themeName ?? getDefaultTheme();
-	currentThemeName = name;
-	try {
-		setGlobalTheme(loadTheme(name));
-		if (enableWatcher) {
-			startThemeWatcher();
-		}
-	} catch (_error) {
-		// Theme is invalid - fall back to dark theme silently
-		currentThemeName = "dark";
-		setGlobalTheme(loadTheme("dark"));
-		// Don't start watcher for fallback theme
-	}
-}
-
-export function setTheme(name: string, enableWatcher: boolean = false): { success: boolean; error?: string } {
-	currentThemeName = name;
-	try {
-		setGlobalTheme(loadTheme(name));
-		if (enableWatcher) {
-			startThemeWatcher();
-		}
-		if (onThemeChangeCallback) {
-			onThemeChangeCallback();
-		}
-		return { success: true };
-	} catch (error) {
-		// Theme is invalid - fall back to dark theme
-		currentThemeName = "dark";
-		setGlobalTheme(loadTheme("dark"));
-		// Don't start watcher for fallback theme
-		return {
-			success: false,
-			error: error instanceof Error ? error.message : String(error),
-		};
-	}
-}
-
-export function setThemeInstance(themeInstance: Theme): void {
-	setGlobalTheme(themeInstance);
-	currentThemeName = "<in-memory>";
-	stopThemeWatcher(); // Can't watch a direct instance
-	if (onThemeChangeCallback) {
-		onThemeChangeCallback();
-	}
-}
-
-export function onThemeChange(callback: () => void): void {
-	onThemeChangeCallback = callback;
-}
-
-function startThemeWatcher(): void {
-	stopThemeWatcher();
-
-	// Only watch if it's a custom theme (not built-in)
-	if (!currentThemeName || currentThemeName === "dark" || currentThemeName === "light") {
-		return;
-	}
-
-	const customThemesDir = getCustomThemesDir();
-	const watchedThemeName = currentThemeName;
-	const watchedFileName = `${watchedThemeName}.json`;
-	const themeFile = path.join(customThemesDir, watchedFileName);
-
-	// Only watch if the file exists
-	if (!fs.existsSync(themeFile)) {
-		return;
-	}
-
-	const scheduleReload = () => {
-		if (themeReloadTimer) {
-			clearTimeout(themeReloadTimer);
-		}
-		themeReloadTimer = setTimeout(() => {
-			themeReloadTimer = undefined;
-
-			// Ignore stale timers after switching themes or stopping the watcher
-			if (currentThemeName !== watchedThemeName) {
-				return;
-			}
-
-			// Keep the last successfully loaded theme active if the file is temporarily missing
-			if (!fs.existsSync(themeFile)) {
-				return;
-			}
-
-			try {
-				// Reload the theme from disk and refresh the registry cache
-				const reloadedTheme = loadThemeFromPath(themeFile);
-				registeredThemes.set(watchedThemeName, reloadedTheme);
-				setGlobalTheme(reloadedTheme);
-				// Notify callback (to invalidate UI)
-				if (onThemeChangeCallback) {
-					onThemeChangeCallback();
-				}
-			} catch (_error) {
-				// Ignore errors (file might be in invalid state while being edited)
-			}
-		}, 100);
-	};
-
-	try {
-		themeWatcher = fs.watch(customThemesDir, (_eventType, filename) => {
-			if (currentThemeName !== watchedThemeName) {
-				return;
-			}
-			if (!filename) {
-				scheduleReload();
-				return;
-			}
-			const changedFile = String(filename);
-			if (changedFile !== watchedFileName) {
-				return;
-			}
-			scheduleReload();
-		});
-		themeWatcher.on("error", () => {
-			try {
-				themeWatcher?.close();
-			} catch {
-				/* ignore */
-			}
-			themeWatcher = undefined;
-		});
-	} catch (_error) {
-		// Ignore errors starting watcher
-	}
-}
-
-export function stopThemeWatcher(): void {
-	if (themeReloadTimer) {
-		clearTimeout(themeReloadTimer);
-		themeReloadTimer = undefined;
-	}
-	if (themeWatcher) {
-		themeWatcher.close();
-		themeWatcher = undefined;
-	}
+export function initTheme(): void {
+	setGlobalTheme(new Theme(detectColorMode()));
 }
 
 // ============================================================================
 // HTML Export Helpers
 // ============================================================================
 
-/**
- * Convert a 256-color index to hex string.
- * Indices 0-15: basic colors (approximate)
- * Indices 16-231: 6x6x6 color cube
- * Indices 232-255: grayscale ramp
- */
-function ansi256ToHex(index: number): string {
-	// Basic colors (0-15) - approximate common terminal values
-	const basicColors = [
-		"#000000",
-		"#800000",
-		"#008000",
-		"#808000",
-		"#000080",
-		"#800080",
-		"#008080",
-		"#c0c0c0",
-		"#808080",
-		"#ff0000",
-		"#00ff00",
-		"#ffff00",
-		"#0000ff",
-		"#ff00ff",
-		"#00ffff",
-		"#ffffff",
-	];
-	if (index < 16) {
-		return basicColors[index];
-	}
-
-	// Color cube (16-231): 6x6x6 = 216 colors
-	if (index < 232) {
-		const cubeIndex = index - 16;
-		const r = Math.floor(cubeIndex / 36);
-		const g = Math.floor((cubeIndex % 36) / 6);
-		const b = cubeIndex % 6;
-		const toHex = (n: number) => (n === 0 ? 0 : 55 + n * 40).toString(16).padStart(2, "0");
-		return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
-	}
-
-	// Grayscale (232-255): 24 shades
-	const gray = 8 + (index - 232) * 10;
-	const grayHex = gray.toString(16).padStart(2, "0");
-	return `#${grayHex}${grayHex}${grayHex}`;
-}
+const DEFAULT_TEXT = "#e5e5e7";
 
 /**
  * Get resolved theme colors as CSS-compatible hex strings.
  * Used by HTML export to generate CSS custom properties.
  */
-export function getResolvedThemeColors(themeName?: string): Record<string, string> {
-	const name = themeName ?? currentThemeName ?? getDefaultTheme();
-	const isLight = name === "light";
-	const themeJson = loadThemeJson(name);
-	const resolved = resolveThemeColors(themeJson.colors, themeJson.vars);
-
-	// Default text color for empty values (terminal uses default fg color)
-	const defaultText = isLight ? "#000000" : "#e5e5e7";
-
+export function getResolvedThemeColors(): Record<string, string> {
 	const cssColors: Record<string, string> = {};
-	for (const [key, value] of Object.entries(resolved)) {
-		if (typeof value === "number") {
-			cssColors[key] = ansi256ToHex(value);
-		} else if (value === "") {
-			// Empty means default terminal color - use sensible fallback for HTML
-			cssColors[key] = defaultText;
-		} else {
-			cssColors[key] = value;
-		}
+	for (const [key, value] of Object.entries(DARK_FG)) {
+		cssColors[key] = value === "" ? DEFAULT_TEXT : value;
+	}
+	for (const [key, value] of Object.entries(DARK_BG)) {
+		cssColors[key] = value === "" ? DEFAULT_TEXT : value;
 	}
 	return cssColors;
 }
 
 /**
- * Check if a theme is a "light" theme (for CSS that needs light/dark variants).
+ * Get export colors for HTML generation.
  */
-export function isLightTheme(themeName?: string): boolean {
-	// Currently just check the name - could be extended to analyze colors
-	return themeName === "light";
-}
-
-/**
- * Get explicit export colors from theme JSON, if specified.
- * Returns undefined for each color that isn't explicitly set.
- */
-export function getThemeExportColors(themeName?: string): {
-	pageBg?: string;
-	cardBg?: string;
-	infoBg?: string;
+export function getThemeExportColors(): {
+	pageBg: string;
+	cardBg: string;
+	infoBg: string;
 } {
-	const name = themeName ?? currentThemeName ?? getDefaultTheme();
-	try {
-		const themeJson = loadThemeJson(name);
-		const exportSection = themeJson.export;
-		if (!exportSection) return {};
-
-		const vars = themeJson.vars ?? {};
-		const resolve = (value: ColorValue | undefined): string | undefined => {
-			if (value === undefined) return undefined;
-			const resolved = resolveVarRefs(value, vars);
-			if (typeof resolved === "number") return ansi256ToHex(resolved);
-			if (resolved === "") return undefined;
-			return resolved;
-		};
-
-		return {
-			pageBg: resolve(exportSection.pageBg),
-			cardBg: resolve(exportSection.cardBg),
-			infoBg: resolve(exportSection.infoBg),
-		};
-	} catch {
-		return {};
-	}
+	return EXPORT_COLORS;
 }
 
 // ============================================================================
@@ -983,11 +441,7 @@ function getCliHighlightTheme(t: Theme): CliHighlightTheme {
  * Returns array of highlighted lines.
  */
 export function highlightCode(code: string, lang?: string): string[] {
-	// Validate language before highlighting to avoid stderr spam from cli-highlight
 	const validLang = lang && supportsLanguage(lang) ? lang : undefined;
-	// Skip highlighting when no valid language is specified. cli-highlight's
-	// auto-detection is unreliable and can misidentify prose as AppleScript,
-	// LiveCodeServer, etc., coloring random English words as keywords.
 	if (!validLang) {
 		return code.split("\n").map((line) => theme.fg("mdCodeBlock", line));
 	}
@@ -1091,11 +545,7 @@ export function getMarkdownTheme(): MarkdownTheme {
 		underline: (text: string) => theme.underline(text),
 		strikethrough: (text: string) => chalk.strikethrough(text),
 		highlightCode: (code: string, lang?: string): string[] => {
-			// Validate language before highlighting to avoid stderr spam from cli-highlight
 			const validLang = lang && supportsLanguage(lang) ? lang : undefined;
-			// Skip highlighting when no valid language is specified. cli-highlight's
-			// auto-detection is unreliable and can misidentify prose as AppleScript,
-			// LiveCodeServer, etc., coloring random English words as keywords.
 			if (!validLang) {
 				return code.split("\n").map((line) => theme.fg("mdCodeBlock", line));
 			}

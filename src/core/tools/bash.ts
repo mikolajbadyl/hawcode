@@ -10,6 +10,7 @@ import { truncateToVisualLines } from "../../modes/interactive/components/visual
 import { theme } from "../../modes/interactive/theme/theme.js";
 import { waitForChildProcess } from "../../utils/child-process.js";
 import { getShellConfig, getShellEnv, killProcessTree } from "../../utils/shell.js";
+import type { BackgroundProcessManager } from "../background-processes.js";
 import { Container, Text, truncateToWidth } from "../tui-stubs.js";
 import { getTextOutput, invalidArgText, str } from "./render-utils.js";
 import { wrapToolDefinition } from "./tool-definition-wrapper.js";
@@ -27,6 +28,12 @@ function getTempFilePath(): string {
 const bashSchema = Type.Object({
 	command: Type.String({ description: "Bash command to execute" }),
 	timeout: Type.Optional(Type.Number({ description: "Timeout in seconds (optional, no default timeout)" })),
+	run_in_background: Type.Optional(
+		Type.Boolean({
+			description:
+				"Run command in background. Returns process ID immediately. Use bg-output to check status and output, bg-kill to kill. Ignores timeout. Default: false",
+		}),
+	),
 });
 
 export type BashToolInput = Static<typeof bashSchema>;
@@ -147,6 +154,8 @@ export interface BashToolOptions {
 	commandPrefix?: string;
 	/** Hook to adjust command, cwd, or env before execution */
 	spawnHook?: BashSpawnHook;
+	/** Background process manager for run_in_background support */
+	backgroundProcessManager?: BackgroundProcessManager;
 }
 
 const BASH_PREVIEW_LINES = 5;
@@ -175,12 +184,14 @@ function formatDuration(ms: number): string {
 	return `${(ms / 1000).toFixed(1)}s`;
 }
 
-function formatBashCall(args: { command?: string; timeout?: number } | undefined): string {
+function formatBashCall(args: { command?: string; timeout?: number; run_in_background?: boolean } | undefined): string {
 	const command = str(args?.command);
 	const timeout = args?.timeout as number | undefined;
+	const bg = args?.run_in_background;
+	const bgSuffix = bg ? theme.fg("muted", " (background)") : "";
 	const timeoutSuffix = timeout ? theme.fg("muted", ` (timeout ${timeout}s)`) : "";
 	const commandDisplay = command === null ? invalidArgText(theme) : command ? command : theme.fg("toolOutput", "...");
-	return theme.fg("toolTitle", theme.bold(`$ ${commandDisplay}`)) + timeoutSuffix;
+	return theme.fg("toolTitle", theme.bold(`$ ${commandDisplay}`)) + timeoutSuffix + bgSuffix;
 }
 
 function rebuildBashResultRenderComponent(
@@ -266,20 +277,38 @@ export function createBashToolDefinition(
 	const ops = options?.operations ?? createLocalBashOperations();
 	const commandPrefix = options?.commandPrefix;
 	const spawnHook = options?.spawnHook;
+	const bgManager = options?.backgroundProcessManager;
 	return {
 		name: "bash",
 		label: "bash",
-		description: `Execute a bash command in the current working directory. Returns stdout and stderr. Output is truncated to last ${DEFAULT_MAX_LINES} lines or ${DEFAULT_MAX_BYTES / 1024}KB (whichever is hit first). If truncated, full output is saved to a temp file. Optionally provide a timeout in seconds.`,
+		description: `Execute a bash command in the current working directory. Returns stdout and stderr. Output is truncated to last ${DEFAULT_MAX_LINES} lines or ${DEFAULT_MAX_BYTES / 1024}KB (whichever is hit first). If truncated, full output is saved to a temp file. Optionally provide a timeout in seconds. Set run_in_background to true to run the command in the background — returns a process ID immediately and the command runs asynchronously. Use bg-output to check output and bg-kill to terminate.`,
 		promptSnippet: "Execute bash commands (ls, grep, find, etc.)",
 		parameters: bashSchema,
 		async execute(
 			_toolCallId,
-			{ command, timeout }: { command: string; timeout?: number },
+			{ command, timeout, run_in_background }: { command: string; timeout?: number; run_in_background?: boolean },
 			signal?: AbortSignal,
 			onUpdate?,
 			_ctx?,
 		) {
 			const resolvedCommand = commandPrefix ? `${commandPrefix}\n${command}` : command;
+
+			// Background execution path
+			if (run_in_background && bgManager) {
+				const spawnContext = resolveSpawnContext(resolvedCommand, cwd, spawnHook);
+				const id = bgManager.spawn(spawnContext.command, spawnContext.cwd);
+				return {
+					content: [
+						{
+							type: "text",
+							text: `Background process started with ID: ${id}\nUse bg-output to check status and output, bg-kill to terminate.`,
+						},
+					],
+					details: undefined,
+				};
+			}
+
+			// Foreground execution path (existing)
 			const spawnContext = resolveSpawnContext(resolvedCommand, cwd, spawnHook);
 			if (onUpdate) {
 				onUpdate({ content: [], details: undefined });

@@ -12,6 +12,16 @@ export {
 	createLocalBashOperations,
 } from "./bash.js";
 export {
+	type BgKillToolInput,
+	createBgKillTool,
+	createBgKillToolDefinition,
+} from "./bg-kill.js";
+export {
+	type BgOutputToolInput,
+	createBgOutputTool,
+	createBgOutputToolDefinition,
+} from "./bg-output.js";
+export {
 	createDocsFetchTool,
 	createDocsFetchToolDefinition,
 	type DocsFetchLibrary,

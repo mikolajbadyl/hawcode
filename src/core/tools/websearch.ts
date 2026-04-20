@@ -81,10 +81,15 @@ function formatResults(results: WebsearchResult[]): string {
 	);
 }
 
+export interface WebsearchToolOptions {
+	operations?: WebsearchOperations;
+}
+
 export function createWebsearchToolDefinition(
-	operations?: WebsearchOperations,
+	_cwd?: string,
+	options?: WebsearchToolOptions,
 ): ToolDefinition<typeof websearchSchema, undefined> {
-	const ops = operations ?? defaultWebsearchOperations;
+	const ops = options?.operations ?? defaultWebsearchOperations;
 	return {
 		name: "websearch",
 		label: "websearch",
@@ -143,10 +148,10 @@ export function createWebsearchToolDefinition(
 	};
 }
 
-export function createWebsearchTool(operations?: WebsearchOperations): AgentTool<typeof websearchSchema> {
-	return wrapToolDefinition(createWebsearchToolDefinition(operations));
+export function createWebsearchTool(cwd?: string, options?: WebsearchToolOptions): AgentTool<typeof websearchSchema> {
+	return wrapToolDefinition(createWebsearchToolDefinition(cwd, options));
 }
 
 /** Default websearch tool. */
-export const websearchToolDefinition = createWebsearchToolDefinition();
-export const websearchTool = createWebsearchTool();
+export const websearchToolDefinition = createWebsearchToolDefinition(process.cwd());
+export const websearchTool = createWebsearchTool(process.cwd());

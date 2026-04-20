@@ -64,10 +64,15 @@ const defaultDocsFetchOperations: DocsFetchOperations = {
 	},
 };
 
+export interface DocsFetchToolOptions {
+	operations?: DocsFetchOperations;
+}
+
 export function createDocsFetchToolDefinition(
-	operations?: DocsFetchOperations,
+	_cwd?: string,
+	options?: DocsFetchToolOptions,
 ): ToolDefinition<typeof docsFetchSchema, undefined> {
-	const ops = operations ?? defaultDocsFetchOperations;
+	const ops = options?.operations ?? defaultDocsFetchOperations;
 	return {
 		name: "docsfetch",
 		label: "docsfetch",
@@ -141,10 +146,10 @@ export function createDocsFetchToolDefinition(
 	};
 }
 
-export function createDocsFetchTool(operations?: DocsFetchOperations): AgentTool<typeof docsFetchSchema> {
-	return wrapToolDefinition(createDocsFetchToolDefinition(operations));
+export function createDocsFetchTool(cwd?: string, options?: DocsFetchToolOptions): AgentTool<typeof docsFetchSchema> {
+	return wrapToolDefinition(createDocsFetchToolDefinition(cwd, options));
 }
 
 /** Default docsfetch tool. */
-export const docsFetchToolDefinition = createDocsFetchToolDefinition();
-export const docsFetchTool = createDocsFetchTool();
+export const docsFetchToolDefinition = createDocsFetchToolDefinition(process.cwd());
+export const docsFetchTool = createDocsFetchTool(process.cwd());

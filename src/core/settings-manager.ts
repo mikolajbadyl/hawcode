@@ -564,14 +564,8 @@ export class SettingsManager {
 		this.save();
 	}
 
-	getTheme(): string | undefined {
-		return this.settings.theme;
-	}
-
-	setTheme(theme: string): void {
-		this.globalSettings.theme = theme;
-		this.markModified("theme");
-		this.save();
+	getThinkingBudgets(): ThinkingBudgetsSettings | undefined {
+		return this.settings.thinkingBudgets;
 	}
 
 	getDefaultThinkingLevel(): "off" | "minimal" | "low" | "medium" | "high" | "xhigh" | undefined {
@@ -765,27 +759,6 @@ export class SettingsManager {
 		projectSettings.prompts = paths;
 		this.markProjectModified("prompts");
 		this.saveProjectSettings(projectSettings);
-	}
-
-	getThemePaths(): string[] {
-		return [...(this.settings.themes ?? [])];
-	}
-
-	setThemePaths(paths: string[]): void {
-		this.globalSettings.themes = paths;
-		this.markModified("themes");
-		this.save();
-	}
-
-	setProjectThemePaths(paths: string[]): void {
-		const projectSettings = structuredClone(this.projectSettings);
-		projectSettings.themes = paths;
-		this.markProjectModified("themes");
-		this.saveProjectSettings(projectSettings);
-	}
-
-	getThinkingBudgets(): ThinkingBudgetsSettings | undefined {
-		return this.settings.thinkingBudgets;
 	}
 
 	getShowImages(): boolean {

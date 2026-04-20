@@ -1,9 +1,8 @@
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readFileSync, statSync } from "node:fs";
 import { homedir } from "node:os";
 import { join, resolve, sep } from "node:path";
 import chalk from "chalk";
 import { CONFIG_DIR_NAME, getAgentDir } from "../config.js";
-import { loadThemeFromPath, type Theme } from "../modes/interactive/theme/theme.js";
 import type { ResourceDiagnostic } from "./diagnostics.js";
 
 export type { ResourceCollision, ResourceDiagnostic } from "./diagnostics.js";
@@ -90,12 +89,10 @@ function loadProjectContextFiles(
 
 export interface ResourceExtensionPaths {
 	promptPaths?: Array<{ path: string; metadata: PathMetadata }>;
-	themePaths?: Array<{ path: string; metadata: PathMetadata }>;
 }
 
 export interface ResourceLoader {
 	getPrompts(): { prompts: PromptTemplate[]; diagnostics: ResourceDiagnostic[] };
-	getThemes(): { themes: Theme[]; diagnostics: ResourceDiagnostic[] };
 	getAgentsFiles(): { agentsFiles: Array<{ path: string; content: string }> };
 	getSystemPrompt(): string | undefined;
 	getAppendSystemPrompt(): string[];
@@ -108,9 +105,7 @@ export interface DefaultResourceLoaderOptions {
 	agentDir?: string;
 	settingsManager?: SettingsManager;
 	noPromptTemplates?: boolean;
-	noThemes?: boolean;
 	additionalPromptTemplatePaths?: string[];
-	additionalThemePaths?: string[];
 	systemPromptSource?: string;
 	appendSystemPromptSource?: string[];
 	systemPromptOverride?: (base: string | undefined) => string | undefined;
@@ -122,10 +117,6 @@ export interface DefaultResourceLoaderOptions {
 		prompts: PromptTemplate[];
 		diagnostics: ResourceDiagnostic[];
 	};
-	themesOverride?: (base: { themes: Theme[]; diagnostics: ResourceDiagnostic[] }) => {
-		themes: Theme[];
-		diagnostics: ResourceDiagnostic[];
-	};
 }
 
 export class DefaultResourceLoader implements ResourceLoader {
@@ -134,9 +125,7 @@ export class DefaultResourceLoader implements ResourceLoader {
 	private settingsManager: SettingsManager;
 	private packageManager: DefaultPackageManager;
 	private additionalPromptTemplatePaths: string[];
-	private additionalThemePaths: string[];
 	private noPromptTemplates: boolean;
-	private noThemes: boolean;
 	private systemPromptSource?: string;
 	private appendSystemPromptSource?: string[];
 	private systemPromptOverride?: (base: string | undefined) => string | undefined;
@@ -148,22 +137,14 @@ export class DefaultResourceLoader implements ResourceLoader {
 		prompts: PromptTemplate[];
 		diagnostics: ResourceDiagnostic[];
 	};
-	private themesOverride?: (base: { themes: Theme[]; diagnostics: ResourceDiagnostic[] }) => {
-		themes: Theme[];
-		diagnostics: ResourceDiagnostic[];
-	};
 
 	private prompts: PromptTemplate[];
 	private promptDiagnostics: ResourceDiagnostic[];
-	private themes: Theme[];
-	private themeDiagnostics: ResourceDiagnostic[];
 	private agentsFiles: Array<{ path: string; content: string }>;
 	private systemPrompt?: string;
 	private appendSystemPrompt: string[];
 	private extensionPromptSourceInfos: Map<string, SourceInfo>;
-	private extensionThemeSourceInfos: Map<string, SourceInfo>;
 	private lastPromptPaths: string[];
-	private lastThemePaths: string[];
 
 	constructor(options: DefaultResourceLoaderOptions) {
 		this.cwd = options.cwd ?? process.cwd();
@@ -175,35 +156,24 @@ export class DefaultResourceLoader implements ResourceLoader {
 			settingsManager: this.settingsManager,
 		});
 		this.additionalPromptTemplatePaths = options.additionalPromptTemplatePaths ?? [];
-		this.additionalThemePaths = options.additionalThemePaths ?? [];
 		this.noPromptTemplates = options.noPromptTemplates ?? false;
-		this.noThemes = options.noThemes ?? false;
 		this.systemPromptSource = options.systemPromptSource;
 		this.appendSystemPromptSource = options.appendSystemPromptSource;
 		this.systemPromptOverride = options.systemPromptOverride;
 		this.appendSystemPromptOverride = options.appendSystemPromptOverride;
 		this.agentsFilesOverride = options.agentsFilesOverride;
 		this.promptsOverride = options.promptsOverride;
-		this.themesOverride = options.themesOverride;
 
 		this.prompts = [];
 		this.promptDiagnostics = [];
-		this.themes = [];
-		this.themeDiagnostics = [];
 		this.agentsFiles = [];
 		this.appendSystemPrompt = [];
 		this.extensionPromptSourceInfos = new Map();
-		this.extensionThemeSourceInfos = new Map();
 		this.lastPromptPaths = [];
-		this.lastThemePaths = [];
 	}
 
 	getPrompts(): { prompts: PromptTemplate[]; diagnostics: ResourceDiagnostic[] } {
 		return { prompts: this.prompts, diagnostics: this.promptDiagnostics };
-	}
-
-	getThemes(): { themes: Theme[]; diagnostics: ResourceDiagnostic[] } {
-		return { themes: this.themes, diagnostics: this.themeDiagnostics };
 	}
 
 	getAgentsFiles(): { agentsFiles: Array<{ path: string; content: string }> } {
@@ -220,13 +190,9 @@ export class DefaultResourceLoader implements ResourceLoader {
 
 	extendResources(paths: ResourceExtensionPaths): void {
 		const promptPaths = this.normalizeExtensionPaths(paths.promptPaths ?? []);
-		const themePaths = this.normalizeExtensionPaths(paths.themePaths ?? []);
 
 		for (const entry of promptPaths) {
 			this.extensionPromptSourceInfos.set(entry.path, createSourceInfo(entry.path, entry.metadata));
-		}
-		for (const entry of themePaths) {
-			this.extensionThemeSourceInfos.set(entry.path, createSourceInfo(entry.path, entry.metadata));
 		}
 
 		if (promptPaths.length > 0) {
@@ -236,14 +202,6 @@ export class DefaultResourceLoader implements ResourceLoader {
 			);
 			this.updatePromptsFromPaths(this.lastPromptPaths);
 		}
-
-		if (themePaths.length > 0) {
-			this.lastThemePaths = this.mergePaths(
-				this.lastThemePaths,
-				themePaths.map((entry) => entry.path),
-			);
-			this.updateThemesFromPaths(this.lastThemePaths);
-		}
 	}
 
 	async reload(): Promise<void> {
@@ -252,7 +210,6 @@ export class DefaultResourceLoader implements ResourceLoader {
 		const metadataByPath = new Map<string, PathMetadata>();
 
 		this.extensionPromptSourceInfos = new Map();
-		this.extensionThemeSourceInfos = new Map();
 
 		// Helper to extract enabled paths and store metadata
 		const getEnabledResources = (
@@ -271,7 +228,6 @@ export class DefaultResourceLoader implements ResourceLoader {
 		): string[] => getEnabledResources(resources).map((r) => r.path);
 
 		const enabledPrompts = getEnabledPaths(resolvedPaths.prompts);
-		const enabledThemes = getEnabledPaths(resolvedPaths.themes);
 
 		const promptPaths = this.noPromptTemplates
 			? [...this.additionalPromptTemplatePaths]
@@ -282,18 +238,6 @@ export class DefaultResourceLoader implements ResourceLoader {
 		for (const p of this.additionalPromptTemplatePaths) {
 			if (existsSync(p) === false && !this.promptDiagnostics.some((d) => d.path === p)) {
 				this.promptDiagnostics.push({ type: "error", message: "Prompt template path does not exist", path: p });
-			}
-		}
-
-		const themePaths = this.noThemes
-			? [...this.additionalThemePaths]
-			: this.mergePaths([...enabledThemes], this.additionalThemePaths);
-
-		this.lastThemePaths = themePaths;
-		this.updateThemesFromPaths(themePaths, metadataByPath);
-		for (const p of this.additionalThemePaths) {
-			if (!existsSync(p) && !this.themeDiagnostics.some((d) => d.path === p)) {
-				this.themeDiagnostics.push({ type: "error", message: "Theme path does not exist", path: p });
 			}
 		}
 
@@ -349,28 +293,6 @@ export class DefaultResourceLoader implements ResourceLoader {
 				this.getDefaultSourceInfoForPath(prompt.filePath),
 		}));
 		this.promptDiagnostics = resolvedPrompts.diagnostics;
-	}
-
-	private updateThemesFromPaths(themePaths: string[], metadataByPath?: Map<string, PathMetadata>): void {
-		let themesResult: { themes: Theme[]; diagnostics: ResourceDiagnostic[] };
-		if (this.noThemes && themePaths.length === 0) {
-			themesResult = { themes: [], diagnostics: [] };
-		} else {
-			const loaded = this.loadThemes(themePaths, false);
-			const deduped = this.dedupeThemes(loaded.themes);
-			themesResult = { themes: deduped.themes, diagnostics: [...loaded.diagnostics, ...deduped.diagnostics] };
-		}
-		const resolvedThemes = this.themesOverride ? this.themesOverride(themesResult) : themesResult;
-		this.themes = resolvedThemes.themes.map((theme) => {
-			const sourcePath = theme.sourcePath;
-			theme.sourceInfo = sourcePath
-				? (this.findSourceInfoForPath(sourcePath, this.extensionThemeSourceInfos, metadataByPath) ??
-					theme.sourceInfo ??
-					this.getDefaultSourceInfoForPath(sourcePath))
-				: theme.sourceInfo;
-			return theme;
-		});
-		this.themeDiagnostics = resolvedThemes.diagnostics;
 	}
 
 	private findSourceInfoForPath(
@@ -430,8 +352,8 @@ export class DefaultResourceLoader implements ResourceLoader {
 		}
 
 		const normalizedPath = resolve(filePath);
-		const agentRoots = [join(this.agentDir, "prompts"), join(this.agentDir, "themes")];
-		const projectRoots = [join(this.cwd, CONFIG_DIR_NAME, "prompts"), join(this.cwd, CONFIG_DIR_NAME, "themes")];
+		const agentRoots = [join(this.agentDir, "prompts")];
+		const projectRoots = [join(this.cwd, CONFIG_DIR_NAME, "prompts")];
 
 		for (const root of agentRoots) {
 			if (this.isUnderPath(normalizedPath, root)) {
@@ -481,87 +403,6 @@ export class DefaultResourceLoader implements ResourceLoader {
 		return resolve(this.cwd, expanded);
 	}
 
-	private loadThemes(
-		paths: string[],
-		includeDefaults: boolean = true,
-	): {
-		themes: Theme[];
-		diagnostics: ResourceDiagnostic[];
-	} {
-		const themes: Theme[] = [];
-		const diagnostics: ResourceDiagnostic[] = [];
-		if (includeDefaults) {
-			const defaultDirs = [join(this.agentDir, "themes"), join(this.cwd, CONFIG_DIR_NAME, "themes")];
-
-			for (const dir of defaultDirs) {
-				this.loadThemesFromDir(dir, themes, diagnostics);
-			}
-		}
-
-		for (const p of paths) {
-			const resolved = resolve(this.cwd, p);
-			if (!existsSync(resolved)) {
-				diagnostics.push({ type: "warning", message: "theme path does not exist", path: resolved });
-				continue;
-			}
-
-			try {
-				const stats = statSync(resolved);
-				if (stats.isDirectory()) {
-					this.loadThemesFromDir(resolved, themes, diagnostics);
-				} else if (stats.isFile() && resolved.endsWith(".json")) {
-					this.loadThemeFromFile(resolved, themes, diagnostics);
-				} else {
-					diagnostics.push({ type: "warning", message: "theme path is not a json file", path: resolved });
-				}
-			} catch (error) {
-				const message = error instanceof Error ? error.message : "failed to read theme path";
-				diagnostics.push({ type: "warning", message, path: resolved });
-			}
-		}
-
-		return { themes, diagnostics };
-	}
-
-	private loadThemesFromDir(dir: string, themes: Theme[], diagnostics: ResourceDiagnostic[]): void {
-		if (!existsSync(dir)) {
-			return;
-		}
-
-		try {
-			const entries = readdirSync(dir, { withFileTypes: true });
-			for (const entry of entries) {
-				let isFile = entry.isFile();
-				if (entry.isSymbolicLink()) {
-					try {
-						isFile = statSync(join(dir, entry.name)).isFile();
-					} catch {
-						continue;
-					}
-				}
-				if (!isFile) {
-					continue;
-				}
-				if (!entry.name.endsWith(".json")) {
-					continue;
-				}
-				this.loadThemeFromFile(join(dir, entry.name), themes, diagnostics);
-			}
-		} catch (error) {
-			const message = error instanceof Error ? error.message : "failed to read theme directory";
-			diagnostics.push({ type: "warning", message, path: dir });
-		}
-	}
-
-	private loadThemeFromFile(filePath: string, themes: Theme[], diagnostics: ResourceDiagnostic[]): void {
-		try {
-			themes.push(loadThemeFromPath(filePath));
-		} catch (error) {
-			const message = error instanceof Error ? error.message : "failed to load theme";
-			diagnostics.push({ type: "warning", message, path: filePath });
-		}
-	}
-
 	private dedupePrompts(prompts: PromptTemplate[]): { prompts: PromptTemplate[]; diagnostics: ResourceDiagnostic[] } {
 		const seen = new Map<string, PromptTemplate>();
 		const diagnostics: ResourceDiagnostic[] = [];
@@ -586,33 +427,6 @@ export class DefaultResourceLoader implements ResourceLoader {
 		}
 
 		return { prompts: Array.from(seen.values()), diagnostics };
-	}
-
-	private dedupeThemes(themes: Theme[]): { themes: Theme[]; diagnostics: ResourceDiagnostic[] } {
-		const seen = new Map<string, Theme>();
-		const diagnostics: ResourceDiagnostic[] = [];
-
-		for (const t of themes) {
-			const name = t.name ?? "unnamed";
-			const existing = seen.get(name);
-			if (existing) {
-				diagnostics.push({
-					type: "collision",
-					message: `name "${name}" collision`,
-					path: t.sourcePath,
-					collision: {
-						resourceType: "theme",
-						name,
-						winnerPath: existing.sourcePath ?? "<builtin>",
-						loserPath: t.sourcePath ?? "<builtin>",
-					},
-				});
-			} else {
-				seen.set(name, t);
-			}
-		}
-
-		return { themes: Array.from(seen.values()), diagnostics };
 	}
 
 	private discoverSystemPromptFile(): string | undefined {

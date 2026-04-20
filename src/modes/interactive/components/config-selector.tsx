@@ -246,11 +246,9 @@ function toggleTopLevelResource(
 	if (scope === "project") {
 		if (arrayKey === "extensions") settingsManager.setProjectExtensionPaths(updated);
 		else if (arrayKey === "prompts") settingsManager.setProjectPromptTemplatePaths(updated);
-		else if (arrayKey === "themes") settingsManager.setProjectThemePaths(updated);
 	} else {
 		if (arrayKey === "extensions") settingsManager.setExtensionPaths(updated);
 		else if (arrayKey === "prompts") settingsManager.setPromptTemplatePaths(updated);
-		else if (arrayKey === "themes") settingsManager.setThemePaths(updated);
 	}
 }
 
