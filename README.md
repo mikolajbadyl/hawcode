@@ -2,7 +2,7 @@
 
 <img src="assets/banner.png" alt="Hawcode" width="600" />
 
-### AI coding agent that lives in your terminal
+### Another AI agent. Less bloat, more terminal.
 
 [![Version](https://img.shields.io/badge/version-0.3.0-blue.svg)](https://github.com/mikolajbadyl/hawcode)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](https://opensource.org/licenses/MIT)
