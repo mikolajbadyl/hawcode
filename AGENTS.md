@@ -86,6 +86,7 @@ Multiple agents may work on different files in the same worktree simultaneously.
 - ALWAYS use `git add <specific-file-paths>` listing only files you modified
 - Before committing, run `git status` and verify you are only staging YOUR files
 - Track which files you created/modified/deleted during the session
+- Use Conventional Commits format: `type(scope): description` (e.g. `feat(tools): add search tool`, `fix(bash): handle timeout`). Keep messages short and descriptive. Types: feat, fix, refactor, docs, test, chore, style, perf, ci, build, revert
 
 ### Forbidden Git Operations
 
